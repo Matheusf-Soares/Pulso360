@@ -1,9 +1,8 @@
 from abc import ABC, abstractmethod
 
-from utils.exceptions.exceptions import ADMIN_CREDENTIAL_EXCEPTION
-from services.base.verifier_service import VerifierService
 
-class BaseService(VerifierService, ABC):
+# Removidos imports de 'utils' e 'verifier_service' inexistentes no projeto atual.
+class BaseService(ABC):
     @abstractmethod
     async def add(): ...
 
