@@ -1,4 +1,5 @@
 """Aplicação FastAPI principal do Pulso360."""
+
 from fastapi import FastAPI
 from fastapi_pagination import add_pagination
 from api.api import api_router
