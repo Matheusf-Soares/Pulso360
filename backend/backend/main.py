@@ -1,18 +1,9 @@
-import os
-import sys
+"""Aplicação FastAPI principal do Pulso360."""
 from fastapi import FastAPI
 from fastapi_pagination import add_pagination
-
-# Garantir que diretório interno 'backend' esteja no sys.path para permitir imports como 'api', 'repositories', etc.
-CURRENT_DIR = os.path.dirname(__file__)
-if CURRENT_DIR not in sys.path:
-    sys.path.append(CURRENT_DIR)
-
 from api.api import api_router
 from core.configs import settings
-
-# Importar todos os modelos cedo para evitar problemas de configuração de mapeamento em relacionamentos com strings.
-import models.__all__models  # noqa: F401
+import models.__all__models  # noqa: F401  # garante registro de todos os modelos no metadata
 
 # Creating FastAPI app
 app = FastAPI(
