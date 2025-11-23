@@ -158,6 +158,7 @@ export default function Alertas() {
   ]);
 
   // Histórico de alertas disparados
+  // eslint-disable-next-line no-unused-vars
   const [alertHistory, setAlertHistory] = useState([
     {
       id: 1,

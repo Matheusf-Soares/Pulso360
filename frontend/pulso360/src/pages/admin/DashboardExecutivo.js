@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 export default function DashboardExecutivo() {
   const navigate = useNavigate();
   const [selectedPeriod, setSelectedPeriod] = useState("30");
+  // eslint-disable-next-line no-unused-vars
   const [selectedDepartment, setSelectedDepartment] = useState("todos");
 
   // KPIs Principais
@@ -329,7 +330,7 @@ export default function DashboardExecutivo() {
             <div className="metric-content">
               <div className="metric-label">{metric.label}</div>
               <div className="metric-value" style={{ color: metric.color }}>{metric.value}</div>
-              <div className={`metric-trend ${metric.trend.startsWith('+') || metric.trend.startsWith('-') && !metric.trend.includes('-') ? 'positive' : 'negative'}`}>
+              <div className={`metric-trend ${metric.trend.startsWith('+') || (metric.trend.startsWith('-') && !metric.trend.includes('-')) ? 'positive' : 'negative'}`}>
                 {metric.trend} vs período anterior
               </div>
             </div>

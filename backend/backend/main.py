@@ -1,6 +1,7 @@
 """Aplicação FastAPI principal do Pulso360."""
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi_pagination import add_pagination
 from api.api import api_router
 from core.configs import settings
@@ -24,6 +25,19 @@ app = FastAPI(
         "url": "https://pulso360.example/licenca",
     },
     terms_of_service="https://pulso360.example/termos",
+)
+
+# Configurar CORS para permitir requisições do frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",  # React dev server
+        "http://127.0.0.1:3000",
+        "http://localhost:3001",  # Porta alternativa
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],  # Permitir todos os métodos HTTP
+    allow_headers=["*"],  # Permitir todos os headers
 )
 
 # Adding routes

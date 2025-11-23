@@ -1,19 +1,56 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function Home() {
   const navigate = useNavigate();
+  const { user } = useAuth(); // Obter dados do usuário logado
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedPeriod, setSelectedPeriod] = useState('mes');
   const [showQuickActions, setShowQuickActions] = useState(false);
   
-  const user = { 
-    name: "Maria Silva", 
-    initials: "MS",
-    role: "Desenvolvedora Frontend Sênior",
-    department: "Tecnologia",
-    avatar: "👩‍💻"
+  // Log para debug
+  console.log('🏠 Home: user do contexto:', user);
+  
+  // Usar dados reais do usuário ou fallback
+  const userData = user ? {
+    name: user.nome || 'Usuário',
+    initials: getInitials(user.nome || 'U'),
+    role: user.cargo || 'Cargo não definido',
+    department: user.senioridade || 'Departamento',
+    avatar: user.foto_url || '👤',
+    email: user.email || '',
+  } : {
+    name: 'Usuário',
+    initials: 'U',
+    role: 'Cargo não definido',
+    department: 'Departamento',
+    avatar: '👤',
+    email: '',
   };
+
+  console.log('🏠 Home: userData processado:', userData);
+
+  // Função para obter iniciais do nome
+  function getInitials(name) {
+    if (!name) return '?';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  }
+
+  // Monitorar mudanças no user
+  useEffect(() => {
+    console.log('🔄 Home: useEffect - user foi atualizado:', user);
+    if (user) {
+      console.log('🔄 Home: Nome do usuário:', user.nome);
+      console.log('🔄 Home: Email do usuário:', user.email);
+      console.log('🔄 Home: Cargo do usuário:', user.cargo);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   // Atualizar relógio em tempo real
   useEffect(() => {
@@ -304,11 +341,11 @@ export default function Home() {
         <div className="header-content">
           <div className="welcome-section">
             <div className="user-avatar-large">
-              <span className="avatar-emoji">{user.avatar}</span>
+              <span className="avatar-emoji">{userData.avatar}</span>
             </div>
             <div className="welcome-text">
-              <h1>{getGreeting()}, {user.name.split(' ')[0]}! 👋</h1>
-              <p className="welcome-subtitle">{user.role} • {user.department}</p>
+              <h1>{getGreeting()}, {userData.name.split(' ')[0]}! 👋</h1>
+              <p className="welcome-subtitle">{userData.role} • {userData.department}</p>
               <div className="date-time">
                 <span className="current-date">{formatDate(currentTime)}</span>
                 <span className="current-time">{formatTime(currentTime)}</span>

@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 export default function Analytics() {
   const navigate = useNavigate();
   const [selectedPeriod, setSelectedPeriod] = useState("7");
-  const [selectedMetric, setSelectedMetric] = useState("usuarios");
 
   const metricas = [
     { 

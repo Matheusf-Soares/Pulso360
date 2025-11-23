@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 export default function Comunicacao() {
   const navigate = useNavigate();
   const [tipoMensagem, setTipoMensagem] = useState("notificacao");
+  // eslint-disable-next-line no-unused-vars
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showTemplatesModal, setShowTemplatesModal] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);

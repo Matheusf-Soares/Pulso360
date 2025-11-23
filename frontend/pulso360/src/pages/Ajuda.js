@@ -179,9 +179,44 @@ export default function Ajuda() {
 
   return (
     <div>
-      <div className="page-header">
-        <h1>Central de Ajuda</h1>
-        <p className="muted">Encontre respostas, tutoriais e entre em contato com nosso suporte</p>
+      {/* Header Profissional Moderno */}
+      <div className="help-header-modern">
+        <div className="header-content-wrapper-help">
+          <div className="header-left-section-help">
+            <div className="header-icon-wrapper-help">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM13 19H11V17H13V19ZM15.07 11.25L14.17 12.17C13.45 12.9 13 13.5 13 15H11V14.5C11 13.4 11.45 12.4 12.17 11.67L13.41 10.41C13.78 10.05 14 9.55 14 9C14 7.9 13.1 7 12 7C10.9 7 10 7.9 10 9H8C8 6.79 9.79 5 12 5C14.21 5 16 6.79 16 9C16 9.88 15.64 10.68 15.07 11.25Z" fill="white"/>
+              </svg>
+            </div>
+            <div className="header-text-section-help">
+              <h1>Central de Ajuda</h1>
+              <p>Encontre respostas rápidas, tutoriais detalhados e entre em contato com nosso suporte especializado</p>
+            </div>
+          </div>
+          
+          <div className="header-right-section-help">
+            <div className="help-quick-stats">
+              <div className="quick-stat-help">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM11 15H9V9H11V15ZM11 7H9V5H11V7Z" fill="currentColor"/>
+                </svg>
+                <span>45 Artigos</span>
+              </div>
+              <div className="quick-stat-help">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M18 4H16V0H14V4H6V0H4V4H2C0.89 4 0 4.9 0 6V18C0 19.1 0.89 20 2 20H18C19.1 20 20 19.1 20 18V6C20 4.9 19.1 4 18 4ZM18 18H2V9H18V18Z" fill="currentColor"/>
+                </svg>
+                <span>Suporte 24/7</span>
+              </div>
+            </div>
+            <button className="btn-header-help-primary">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M16 2H2C0.9 2 0.01 2.9 0.01 4L0 18L4 14H16C17.1 14 18 13.1 18 12V4C18 2.9 17.1 2 16 2ZM14 10H4V8H14V10ZM14 7H4V5H14V7Z" fill="currentColor"/>
+              </svg>
+              Contatar Suporte
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="help-container">
