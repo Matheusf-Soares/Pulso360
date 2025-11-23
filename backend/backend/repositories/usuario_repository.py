@@ -22,7 +22,9 @@ class UsuarioRepository(BaseRepository):
         return await self.get(model_type=Usuario, id=usuario_id)
 
     async def obter_por_email(self, email: str) -> Optional[Usuario]:
-        usuarios = await self.get_by(model_type=Usuario, attr="email", value=email, one=True)
+        usuarios = await self.get_by(
+            model_type=Usuario, attr="email", value=email, one=True
+        )
         return usuarios
 
     async def get_by_email(self, email: str) -> Optional[Usuario]:
