@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 
 const Notificacoes = () => {
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [filteredNotifications, setFilteredNotifications] = useState([]);
   const [filterPeriod, setFilterPeriod] = useState('todos');
@@ -9,12 +11,21 @@ const Notificacoes = () => {
   const [selectedNotifications, setSelectedNotifications] = useState([]);
   const [viewMode, setViewMode] = useState('list');
 
-  // Dados simulados de notificações
+  // Informações do usuário logado
+  const currentUser = user ? {
+    name: user.nome || 'Usuário',
+    manager: user.gestor || 'Gestor'
+  } : {
+    name: 'Usuário',
+    manager: 'Gestor'
+  };
+
+  // Dados simulados de notificações (personalizadas para o usuário)
   const mockNotifications = [
     {
       id: 1,
       title: "Nova avaliação disponível",
-      message: "Sua avaliação de performance do 4º trimestre está disponível para visualização.",
+      message: `${currentUser.name}, sua avaliação de performance do 4º trimestre está disponível para visualização.`,
       type: "info",
       date: new Date(2025, 10, 13, 9, 30),
       read: false,
@@ -25,7 +36,7 @@ const Notificacoes = () => {
     {
       id: 2,
       title: "Meta concluída com sucesso!",
-      message: "Parabéns! Você concluiu a meta 'Implementar Dashboard Analytics' com 95% de qualidade.",
+      message: `Parabéns ${currentUser.name}! Você concluiu a meta 'Implementar Dashboard Analytics' com 95% de qualidade.`,
       type: "success",
       date: new Date(2025, 10, 12, 14, 45),
       read: false,
@@ -36,13 +47,13 @@ const Notificacoes = () => {
     {
       id: 3,
       title: "Reunião de PDI agendada",
-      message: "Sua reunião de revisão do PDI foi agendada para 15/11/2025 às 14h30 com seu gestor Carlos Mendes.",
+      message: `Sua reunião de revisão do PDI foi agendada para 15/11/2025 às 14h30 com seu gestor ${currentUser.manager}.`,
       type: "warning",
       date: new Date(2025, 10, 11, 16, 20),
       read: true,
       category: "reuniao",
       priority: "high",
-      sender: "Carlos Mendes"
+      sender: currentUser.manager
     },
     {
       id: 4,
@@ -126,6 +137,7 @@ const Notificacoes = () => {
   useEffect(() => {
     setNotifications(mockNotifications);
     setFilteredNotifications(mockNotifications);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Filtrar notificações por período
@@ -278,78 +290,110 @@ const Notificacoes = () => {
 
   return (
     <div className="notifications-container">
-      {/* Header da página */}
-      <div className="notifications-header">
-        <div className="header-content">
-          <div className="header-info">
-            <h1>🔔 Notificações</h1>
-            <p>Acompanhe todas as atualizações e lembretes importantes</p>
+      {/* Header Profissional */}
+      <div className="notifications-header-modern">
+        <div className="header-background-pattern"></div>
+        
+        <div className="header-main-content">
+          <div className="header-left-section">
+            <div className="header-icon-wrapper-notif">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+                <path d="M12 22C13.1 22 14 21.1 14 20H10C10 21.1 10.9 22 12 22ZM18 16V11C18 7.93 16.37 5.36 13.5 4.68V4C13.5 3.17 12.83 2.5 12 2.5C11.17 2.5 10.5 3.17 10.5 4V4.68C7.64 5.36 6 7.92 6 11V16L4 18V19H20V18L18 16Z" fill="white"/>
+              </svg>
+            </div>
+            
+            <div className="header-text-content">
+              <h1 className="header-title-modern">Central de Notificações</h1>
+              <p className="header-subtitle-modern">Acompanhe atualizações, lembretes e eventos importantes em tempo real</p>
+            </div>
           </div>
-        </div>
-        <div className="header-actions">
-          <button className="btn-secondary" onClick={markAllAsRead}>
-            <span>✓</span>
-            Marcar Todas como Lidas
-          </button>
-          {selectedNotifications.length > 0 && (
-            <button className="btn-outline" onClick={deleteSelectedNotifications}>
-              <span>🗑️</span>
-              Excluir Selecionadas ({selectedNotifications.length})
+          
+          <div className="header-right-section">
+            <button className="btn-header-secondary" onClick={markAllAsRead}>
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M6.75 11.25L3.75 8.25L2.6925 9.3075L6.75 13.365L15.75 4.365L14.6925 3.3075L6.75 11.25Z" fill="currentColor"/>
+                <path d="M6.75 8.25L9.75 5.25L8.6925 4.1925L5.6925 7.1925L6.75 8.25Z" fill="currentColor"/>
+              </svg>
+              Marcar Todas como Lidas
             </button>
-          )}
+            
+            {selectedNotifications.length > 0 && (
+              <button className="btn-header-danger" onClick={deleteSelectedNotifications}>
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <path d="M4.5 14.25C4.5 15.075 5.175 15.75 6 15.75H12C12.825 15.75 13.5 15.075 13.5 14.25V5.25H4.5V14.25ZM6 6.75H12V14.25H6V6.75ZM11.625 3L10.875 2.25H7.125L6.375 3H3.75V4.5H14.25V3H11.625Z" fill="currentColor"/>
+                </svg>
+                Excluir ({selectedNotifications.length})
+              </button>
+            )}
+          </div>
         </div>
-      </div>
-
-      {/* Estatísticas */}
-      <div className="notifications-stats">
-        <h2>📊 Resumo das Notificações</h2>
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-header">
-              <span className="stat-icon">📨</span>
-              <span className="trend-indicator primary">↗️</span>
+        
+        {/* Stats Cards Integradas no Header */}
+        <div className="header-stats-cards">
+          <div className="stat-card-header total">
+            <div className="stat-icon-wrapper">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M20 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4ZM20 18H4V6H20V18ZM6 10H18V12H6V10ZM6 14H14V16H6V14Z" fill="currentColor"/>
+              </svg>
             </div>
             <div className="stat-content">
-              <div className="stat-value">{stats.total}</div>
-              <div className="stat-title">Total</div>
+              <span className="stat-value">{stats.total}</span>
+              <span className="stat-label">Total de Notificações</span>
+            </div>
+            <div className="stat-trend">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M8 3L12 7H9V13H7V7H4L8 3Z" fill="currentColor"/>
+              </svg>
             </div>
           </div>
           
-          <div className="stat-card">
-            <div className="stat-header">
-              <span className="stat-icon">📬</span>
-              <span className={`trend-indicator ${stats.unread > 0 ? 'warning' : 'success'}`}>
-                {stats.unread > 0 ? '⚠️' : '✅'}
-              </span>
+          <div className={`stat-card-header unread ${stats.unread > 0 ? 'has-unread' : ''}`}>
+            <div className="stat-icon-wrapper">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M20 4H4C2.9 4 2.01 4.9 2.01 6L2 18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4ZM20 8L12 13L4 8V6L12 11L20 6V8Z" fill="currentColor"/>
+              </svg>
             </div>
             <div className="stat-content">
-              <div className="stat-value">{stats.unread}</div>
-              <div className="stat-title">Não Lidas</div>
+              <span className="stat-value">{stats.unread}</span>
+              <span className="stat-label">Não Lidas</span>
+            </div>
+            {stats.unread > 0 && (
+              <div className="stat-badge-pulse">
+                <span className="pulse-dot"></span>
+              </div>
+            )}
+          </div>
+          
+          <div className="stat-card-header today">
+            <div className="stat-icon-wrapper">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M19 3H18V1H16V3H8V1H6V3H5C3.89 3 3 3.9 3 5V19C3 20.1 3.89 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM19 19H5V9H19V19ZM19 7H5V5H19V7ZM7 11H17V13H7V11Z" fill="currentColor"/>
+              </svg>
+            </div>
+            <div className="stat-content">
+              <span className="stat-value">{stats.today}</span>
+              <span className="stat-label">Recebidas Hoje</span>
+            </div>
+            <div className="stat-trend success">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M6 12L2 8L3.4 6.6L6 9.2L12.6 2.6L14 4L6 12Z" fill="currentColor"/>
+              </svg>
             </div>
           </div>
           
-          <div className="stat-card">
-            <div className="stat-header">
-              <span className="stat-icon">📅</span>
-              <span className="trend-indicator success">📈</span>
+          <div className={`stat-card-header priority ${stats.priority > 0 ? 'has-priority' : ''}`}>
+            <div className="stat-icon-wrapper">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2L2 7V17C2 20.87 5.84 24 12 24C18.16 24 22 20.87 22 17V7L12 2ZM12 5.5L18.16 9L12 12.5L5.84 9L12 5.5ZM12 22C7.03 22 4 19.45 4 17V10.61L12 15.11L20 10.61V17C20 19.45 16.97 22 12 22ZM11 13H13V15H11V13ZM11 9H13V11H11V9Z" fill="currentColor"/>
+              </svg>
             </div>
             <div className="stat-content">
-              <div className="stat-value">{stats.today}</div>
-              <div className="stat-title">Hoje</div>
+              <span className="stat-value">{stats.priority}</span>
+              <span className="stat-label">Alta Prioridade</span>
             </div>
-          </div>
-          
-          <div className="stat-card">
-            <div className="stat-header">
-              <span className="stat-icon">🚨</span>
-              <span className={`trend-indicator ${stats.priority > 0 ? 'error' : 'success'}`}>
-                {stats.priority > 0 ? '🔥' : '✅'}
-              </span>
-            </div>
-            <div className="stat-content">
-              <div className="stat-value">{stats.priority}</div>
-              <div className="stat-title">Alta Prioridade</div>
-            </div>
+            {stats.priority > 0 && (
+              <div className="stat-badge-fire">🔥</div>
+            )}
           </div>
         </div>
       </div>

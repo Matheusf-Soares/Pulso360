@@ -68,3 +68,32 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+## Mock de backend para desenvolvimento
+
+Se o backend não estiver rodando, você pode usar o mock local (MSW) que intercepta chamadas para `/api/v1/*` em modo de desenvolvimento.
+
+Passos rápidos:
+
+1. Instale a dependência de desenvolvimento:
+
+```bash
+cd frontend/pulso360
+npm install msw --save-dev
+```
+
+2. Inicie o frontend em modo de desenvolvimento (o MSW é inicializado automaticamente quando `NODE_ENV=development`):
+
+```bash
+npm start
+```
+
+3. O mock fornece endpoints básicos para testes, por exemplo:
+
+- `GET /api/v1/usuarios` — lista de usuários
+- `GET /api/v1/usuarios/:id` — detalhe do usuário
+- `GET /api/v1/equipes` — lista de equipes
+- `POST /api/v1/auth/login` — retorna token falso
+
+Para desativar o mock e usar o backend real, rode a aplicação com `NODE_ENV=production` ou remova temporariamente a inicialização do worker em `src/index.js`.
+

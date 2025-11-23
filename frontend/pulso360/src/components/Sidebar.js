@@ -38,6 +38,16 @@ export default function Sidebar() {
           </Link>
         ))}
       </nav>
+
+      {/* Período no rodapé do sidebar */}
+      <div className="sidebar-footer">
+        <div className="period-badge-sidebar">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M14 2H12V0H10V2H6V0H4V2H2C0.9 2 0 2.9 0 4V14C0 15.1 0.9 16 2 16H14C15.1 16 16 15.1 16 14V4C16 2.9 15.1 2 14 2ZM14 14H2V6H14V14Z" fill="currentColor"/>
+          </svg>
+          <span>IT 2025</span>
+        </div>
+      </div>
     </aside>
   );
 }

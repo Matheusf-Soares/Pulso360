@@ -22,10 +22,12 @@ class UsuarioRepository(BaseRepository):
         return await self.get(model_type=Usuario, id=usuario_id)
 
     async def obter_por_email(self, email: str) -> Optional[Usuario]:
-        usuarios = await self.get_by(
-            model_type=Usuario, attr="email", value=email, one=True
-        )
+        usuarios = await self.get_by(model_type=Usuario, attr="email", value=email, one=True)
         return usuarios
+
+    async def get_by_email(self, email: str) -> Optional[Usuario]:
+        """Alias para obter_por_email (usado pelo auth endpoint)."""
+        return await self.obter_por_email(email)
 
     async def filtrar(self, filtro: Dict[str, Any]) -> List[Usuario]:
         return await self.filter(filter_data=filtro, model_type=Usuario)
