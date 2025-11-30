@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const Relatorios = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [selectedPeriod, setSelectedPeriod] = useState('mensal');
   const [selectedReport, setSelectedReport] = useState('performance');
   const [showNewReportModal, setShowNewReportModal] = useState(false);
@@ -113,6 +115,21 @@ const Relatorios = () => {
       downloads: 34
     }
   ];
+
+  // Inicializa o tipo de relatório a partir de ?type=...
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const type = (params.get('type') || '').toLowerCase();
+    const map = {
+      individual: 'performance',
+      team: 'team',
+      pdi: 'pdi',
+      competencias: 'competencias',
+      feedback: 'feedback',
+      analytics: 'analytics'
+    };
+    if (map[type]) setSelectedReport(map[type]);
+  }, [location.search]);
 
   const quickStats = [
     {

@@ -27,3 +27,12 @@ class FeedbackRead(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class FeedbackUpdate(BaseModel):
+    """Campos opcionais para atualização de feedback existente."""
+
+    tipo: Optional[str] = None
+    texto: Optional[str] = None
+    visivel_para_avaliado: Optional[bool] = None
+    avaliacao_id: Optional[UUID] = None

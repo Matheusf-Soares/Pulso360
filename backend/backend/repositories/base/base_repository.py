@@ -6,6 +6,8 @@ from abc import ABC
 from typing import Any, List, Optional, Union, Tuple
 from sqlalchemy.future import select
 from sqlalchemy import Select, func
+from sqlalchemy.sql.type_api import TypeEngine
+from sqlalchemy import String
 
 from models.base.base_entity_model import BaseEntityModel
 
@@ -117,7 +119,9 @@ class BaseRepository(ABC):
         for attr, value in common_attributes:
             column = getattr(model_type, attr, None)
             if column is not None and value is not None:
-                if isinstance(value, str):
+                # Evita usar ILIKE em colunas que não são texto (ex: UUID) para prevenir erro de operador.
+                col_type: TypeEngine = getattr(column, "type", None)
+                if isinstance(col_type, String) and isinstance(value, str):
                     query = query.filter(column.ilike(f"%{value}%"))
                 else:
                     query = query.filter(column == value)

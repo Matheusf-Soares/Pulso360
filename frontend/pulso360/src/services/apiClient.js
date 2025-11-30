@@ -37,15 +37,22 @@ apiClient.interceptors.response.use(
   (error) => {
     console.log('🔴 Erro na requisição:', error.message, error.code);
     
-    // Se o token expirou (401), limpar localStorage e redirecionar para login
+    // Tratamento específico para 401
     if (error.response?.status === 401) {
-      console.log('🔒 Token expirado ou inválido, fazendo logout');
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('user');
-      
-      // Redirecionar para login apenas se não estiver já na página de login
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+      const isLoginAttempt = error.config?.url?.includes('/auth/login');
+      const detail = error.response?.data?.detail || 'Credenciais inválidas';
+      // Se for tentativa de login apenas exibir erro, não limpar estado nem redirecionar
+      if (isLoginAttempt) {
+        if (window.showNotification) {
+          window.showNotification(detail, 'error');
+        }
+      } else {
+        console.log('🔒 Token expirado ou inválido, fazendo logout');
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user');
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
       }
     }
 

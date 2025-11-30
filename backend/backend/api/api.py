@@ -14,6 +14,8 @@ from api.endpoints.pdis import router as pdis_router
 from api.endpoints.metas import router as metas_router
 from api.endpoints.acoes_meta import router as acoes_meta_router
 from api.endpoints.feedbacks import router as feedbacks_router
+from api.endpoints.tarefas import router as tarefas_router
+from api.endpoints.dashboard import router as dashboard_router
 
 api_router = APIRouter()
 
@@ -45,3 +47,7 @@ api_router.include_router(acoes_meta_router)
 
 # Feedbacks
 api_router.include_router(feedbacks_router)
+
+# Tarefas (Home dashboard)
+api_router.include_router(tarefas_router)
+api_router.include_router(dashboard_router)

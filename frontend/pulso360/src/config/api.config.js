@@ -9,8 +9,8 @@ const API_CONFIG = {
     ? process.env.REACT_APP_API_URL
     : (process.env.NODE_ENV === 'development' ? '' : 'http://localhost:8000'),
   
-  // Versão da API
-  API_VERSION: '/api/v1',
+  // Versão da API configurável via .env
+  API_VERSION: process.env.REACT_APP_API_VERSION || '/api/v1',
   
   // Timeout padrão para requisições (30 segundos)
   TIMEOUT: 30000,

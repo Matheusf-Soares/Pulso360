@@ -95,6 +95,11 @@ class Usuario(settings.DBBaseModel, BaseEntityModel):
         "AcaoMeta", back_populates="responsavel", cascade="all, delete-orphan"
     )
 
+    # tarefas associadas (dashboard)
+    tarefas: Mapped[List["Tarefa"]] = relationship(
+        "Tarefa", back_populates="usuario", cascade="all, delete-orphan"
+    )
+
     # created_at herdado de BaseEntityModel (created_at)
 
     def __repr__(self) -> str:  # pragma: no cover (apenas depuração)

@@ -146,6 +146,25 @@ export const toSlug = (text) => {
     .replace(/^-+|-+$/g, '');
 };
 
+/**
+ * Tempo relativo simples (ex.: "há 2h", "há 3d")
+ * @param {Date|String} date
+ * @returns {String}
+ */
+export const formatRelativeTime = (date) => {
+  if (!date) return '-';
+  const d = new Date(date);
+  const diff = Date.now() - d.getTime();
+  const sec = Math.floor(diff / 1000);
+  if (sec < 60) return 'agora';
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `há ${min}m`;
+  const hrs = Math.floor(min / 60);
+  if (hrs < 24) return `há ${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  return `há ${days}d`;
+};
+
 export default {
   formatDate,
   formatDateTime,

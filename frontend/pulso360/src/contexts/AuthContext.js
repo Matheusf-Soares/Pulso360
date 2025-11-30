@@ -14,6 +14,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [loginError, setLoginError] = useState(null); // guarda última mensagem de erro de login
 
   // Verificar autenticação ao carregar a aplicação
   useEffect(() => {
@@ -81,6 +82,7 @@ export const AuthProvider = ({ children }) => {
 
       setUser(response.user);
       setIsAuthenticated(true);
+      setLoginError(null); // limpa erro anterior
 
       if (window.showNotification) {
         window.showNotification(`Bem-vindo(a), ${response.user.nome}!`, 'success');
@@ -91,14 +93,11 @@ export const AuthProvider = ({ children }) => {
       return true;
     } catch (error) {
       console.error('❌ Erro ao tentar login:', error);
-
+      const detail = error.response?.data?.detail || 'Erro ao fazer login. Verifique suas credenciais.';
+      setLoginError(detail);
       if (window.showNotification) {
-        window.showNotification(
-          error.response?.data?.detail || 'Erro ao fazer login. Verifique suas credenciais.',
-          'error'
-        );
+        window.showNotification(detail, 'error');
       }
-
       return false;
     } finally {
       setIsLoading(false);
@@ -152,6 +151,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateUser,
     handleLoginSubmit, // Adicionando handleLoginSubmit ao contexto
+    loginError,
   };
 
   return (

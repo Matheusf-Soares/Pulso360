@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timezone
 
-from core.database import get_session
+from core.dependencies import get_session
 from core.security import check_password, generate_hash_password
 from schemas.auth import LoginRequest, TokenResponse, UserLoginInfo
 from repositories.usuario_repository import UsuarioRepository
@@ -22,15 +22,15 @@ def generate_access_token(user_email: str, user_id: str) -> str:
     expires = datetime.now(timezone.utc) + timedelta(
         minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
     )
-    
+
     payload = {
         "sub": user_email,
         "user_id": str(user_id),
         "exp": expires,
         "iat": datetime.now(timezone.utc),
-        "type": "access_token"
+        "type": "access_token",
     }
-    
+
     token = jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.ALGORITHM)
     return token
 
@@ -56,72 +56,69 @@ def generate_access_token(user_email: str, user_id: str) -> str:
                             "cargo": "Desenvolvedor",
                             "senioridade": "Pleno",
                             "foto_url": None,
-                            "ativo": True
-                        }
+                            "ativo": True,
+                        },
                     }
                 }
-            }
+            },
         },
         401: {"description": "Credenciais inválidas"},
-        403: {"description": "Usuário inativo"}
-    }
+        403: {"description": "Usuário inativo"},
+    },
 )
-async def login(
-    login_data: LoginRequest,
-    db: AsyncSession = Depends(get_session)
-):
+async def login(login_data: LoginRequest, db: AsyncSession = Depends(get_session)):
     """
     Realiza autenticação do usuário.
-    
+
     - **email**: Email do usuário cadastrado
     - **senha**: Senha do usuário
-    
+
     Retorna um token JWT válido por 60 minutos e informações básicas do usuário.
     """
     usuario_repo = UsuarioRepository(db)
-    
-    # Buscar usuário por email
-    usuario: Usuario = await usuario_repo.get_by_email(login_data.email)
-    
+
+    # Normalizar email (lowercase + strip)
+    normalized_email = login_data.email.strip().lower()
+
+    # Buscar usuário por email normalizado
+    usuario: Usuario = await usuario_repo.get_by_email(normalized_email)
+
     if not usuario:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Email ou senha incorretos",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     # Verificar senha
-    if not check_password(login_data.senha, usuario.senha_hash):
+    senha = login_data.senha.strip()
+    if not check_password(senha, usuario.senha_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Email ou senha incorretos",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     # Verificar se usuário está ativo
     if not usuario.ativo:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Usuário inativo. Entre em contato com o administrador.",
         )
-    
-    # Atualizar último login
+
+    # Atualizar último login (flush ao invés de commit manual pois transação é gerida pelo dependency get_session)
     usuario.ultimo_login = datetime.now(timezone.utc)
     db.add(usuario)
-    await db.commit()
-    await db.refresh(usuario)
-    
+    # Apenas flush: o commit será executado automaticamente ao sair do context manager em get_session
+    await db.flush()
+
     # Gerar token JWT
     access_token = generate_access_token(usuario.email, usuario.id)
-    
+
     # Preparar informações do usuário
     user_info = UserLoginInfo.model_validate(usuario)
-    
-    return TokenResponse(
-        access_token=access_token,
-        token_type="bearer",
-        user=user_info
-    )
+
+    return TokenResponse(access_token=access_token, token_type="bearer", user=user_info)
 
 
 @router.post(
@@ -131,51 +128,48 @@ async def login(
     summary="Registrar novo usuário",
     description="Cria uma nova conta de usuário e retorna token de acesso.",
 )
-async def register(
-    login_data: LoginRequest,
-    db: AsyncSession = Depends(get_session)
-):
+async def register(login_data: LoginRequest, db: AsyncSession = Depends(get_session)):
     """
     Registra um novo usuário no sistema.
-    
+
     - **email**: Email único do usuário
     - **senha**: Senha (mínimo 6 caracteres)
-    
+
     Retorna token JWT e informações do usuário criado.
     """
     usuario_repo = UsuarioRepository(db)
-    
+
+    normalized_email = login_data.email.strip().lower()
+
     # Verificar se email já existe
-    existing_user = await usuario_repo.get_by_email(login_data.email)
+    existing_user = await usuario_repo.get_by_email(normalized_email)
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email já cadastrado no sistema"
+            detail="Email já cadastrado no sistema",
         )
-    
+
     # Criar novo usuário
-    senha_hash = generate_hash_password(login_data.senha)
-    
+    senha_hash = generate_hash_password(login_data.senha.strip())
+
     novo_usuario = Usuario(
-        nome=login_data.email.split('@')[0].title(),  # Nome temporário a partir do email
-        email=login_data.email,
+        nome=normalized_email.split("@")[
+            0
+        ].title(),  # Nome temporário a partir do email
+        email=normalized_email,
         senha_hash=senha_hash,
         ativo=True,
-        ultimo_login=datetime.now(timezone.utc)
+        ultimo_login=datetime.now(timezone.utc),
     )
-    
+
     db.add(novo_usuario)
     await db.commit()
     await db.refresh(novo_usuario)
-    
+
     # Gerar token JWT
     access_token = generate_access_token(novo_usuario.email, novo_usuario.id)
-    
+
     # Preparar informações do usuário
     user_info = UserLoginInfo.model_validate(novo_usuario)
-    
-    return TokenResponse(
-        access_token=access_token,
-        token_type="bearer",
-        user=user_info
-    )
+
+    return TokenResponse(access_token=access_token, token_type="bearer", user=user_info)

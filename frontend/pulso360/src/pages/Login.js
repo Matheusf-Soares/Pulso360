@@ -13,7 +13,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, loginError } = useAuth();
   const navigate = useNavigate();
 
   // Redirecionar se já estiver autenticado
@@ -88,6 +88,19 @@ const Login = () => {
 
           {/* Formulário de Login */}
           <form onSubmit={handleSubmit} className="login-form">
+            {loginError && (
+              <div className="login-error" role="alert" style={{
+                background:'#ffefef',
+                border:'1px solid #e0b4b4',
+                color:'#912d2b',
+                padding:'8px 12px',
+                borderRadius:'4px',
+                marginBottom:'12px',
+                fontSize:'0.9rem'
+              }}>
+                {loginError}
+              </div>
+            )}
             <div className="form-group">
               <label htmlFor="email">Email</label>
               <div className="input-wrapper">

@@ -23,20 +23,23 @@ class FeedbackService(BaseService):
         self.usuario_repository = usuario_repository
 
     async def add(self, data: Dict[str, Any]) -> Feedback:
+        """Cria feedback validando IDs conforme schema (de_usuario_id, para_usuario_id)."""
         if data.get("avaliacao_id"):
             avaliacao = await self.avaliacao_repository.obter_por_id(
                 str(data["avaliacao_id"])
             )
             if not avaliacao:
                 not_found("Avaliação associada não encontrada")
-        # autor e destinatario (usuario) são obrigatórios
-        if not data.get("autor_id") or not data.get("usuario_id"):
-            bad_request("autor_id e usuario_id são obrigatórios")
-        autor = await self.usuario_repository.obter_por_id(str(data["autor_id"]))
+        # de_usuario_id (autor) e para_usuario_id (destinatário) obrigatórios
+        if not data.get("de_usuario_id") or not data.get("para_usuario_id"):
+            bad_request("de_usuario_id e para_usuario_id são obrigatórios")
+        autor = await self.usuario_repository.obter_por_id(str(data["de_usuario_id"]))
         if not autor:
             not_found("Autor do feedback não encontrado")
-        usuario = await self.usuario_repository.obter_por_id(str(data["usuario_id"]))
-        if not usuario:
+        destinatario = await self.usuario_repository.obter_por_id(
+            str(data["para_usuario_id"])
+        )
+        if not destinatario:
             not_found("Usuário destinatário não encontrado")
         feedback = Feedback(**data)
         await self.feedback_repository.adicionar(feedback)

@@ -1,305 +1,120 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import pdiService from '../services/pdiService';
 
 const PDI = () => {
+      // Modal handlers for Add Goal
+      const handleOpenAddGoalModal = () => setShowAddGoalModal(true);
+      const handleCloseAddGoalModal = () => setShowAddGoalModal(false);
+      const handleNewGoalChange = (field, value) => {
+        setNewGoal(prev => ({ ...prev, [field]: value }));
+      };
+      const handleMilestoneChange = (index, value) => {
+        setNewGoal(prev => {
+          const updated = [...prev.milestones];
+          updated[index] = value;
+          return { ...prev, milestones: updated };
+        });
+      };
+      // Modal handler for Goal Details
+      const handleCloseGoalDetails = () => {
+        setShowGoalDetails(false);
+        setCurrentGoalDetails(null);
+      };
+    // Estados para modais e curso
+    const [showCourseModal, setShowCourseModal] = useState(false);
+    const [currentCourse, setCurrentCourse] = useState(null);
+    const [courseModalType, setCourseModalType] = useState('details');
   const { user } = useAuth(); // Obter dados do usuário logado
   // eslint-disable-next-line no-unused-vars
-  const [selectedGoal, setSelectedGoal] = useState(null);
+  const [pdiData, setPdiData] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
-  const [showAddGoalModal, setShowAddGoalModal] = useState(false);
-  const [showGoalDetails, setShowGoalDetails] = useState(false);
-  const [currentGoalDetails, setCurrentGoalDetails] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
-  const [showCourseModal, setShowCourseModal] = useState(false);
-  const [currentCourse, setCurrentCourse] = useState(null);
-  const [courseModalType, setCourseModalType] = useState('details'); // 'details' ou 'access'
-  const [goals, setGoals] = useState([
-    {
-      id: 1,
-      title: 'Liderança Técnica',
-      category: 'Liderança',
-      description: 'Desenvolver habilidades de mentoria e liderança técnica',
-      progress: 85,
-      status: 'in-progress',
-      priority: 'high',
-      dueDate: '2024-06-30',
-      milestones: [
-        { id: 1, title: 'Mentorar 2 desenvolvedores júnior', completed: true },
-        { id: 2, title: 'Liderar projeto de arquitetura', completed: true },
-        { id: 3, title: 'Apresentar tech talks', completed: false },
-        { id: 4, title: 'Conduzir code reviews', completed: true }
-      ]
-    },
-    {
-      id: 2,
-      title: 'Certificação AWS',
-      category: 'Técnico',
-      description: 'Obter certificação AWS Solutions Architect',
-      progress: 45,
-      status: 'in-progress',
-      priority: 'medium',
-      dueDate: '2024-08-30',
-      milestones: [
-        { id: 1, title: 'Completar curso preparatório', completed: true },
-        { id: 2, title: 'Estudar casos práticos', completed: false },
-        { id: 3, title: 'Fazer simulados', completed: false },
-        { id: 4, title: 'Agendar prova', completed: false }
-      ]
-    },
-    {
-      id: 3,
-      title: 'Soft Skills',
-      category: 'Comportamental',
-      description: 'Aprimorar comunicação e trabalho em equipe',
-      progress: 92,
-      status: 'completed',
-      priority: 'medium',
-      dueDate: '2024-03-30',
-      milestones: [
-        { id: 1, title: 'Workshop de comunicação', completed: true },
-        { id: 2, title: 'Feedback 360°', completed: true },
-        { id: 3, title: 'Apresentações para equipe', completed: true },
-        { id: 4, title: 'Curso de negociação', completed: true }
-      ]
+  const [showAddGoalModal, setShowAddGoalModal] = useState(false);
+  const [newGoal, setNewGoal] = useState({ title: '', category: 'Técnico', priority: 'high', dueDate: '', description: '', milestones: ["", "", "", ""] });
+  const [showGoalDetails, setShowGoalDetails] = useState(false);
+  const [currentGoalDetails, setCurrentGoalDetails] = useState(null);
+  
+  useEffect(() => {
+    async function fetchPDI() {
+      try {
+        const data = await pdiService.getPDI();
+        setPdiData(data);
+      } catch (e) {
+        // erro ao carregar PDI
+      }
     }
-  ]);
+    fetchPDI();
+  }, []);
+  
+  // Funções CRUD/metas
+  const handleAddGoal = async () => {
+    if (!newGoal.title || !newGoal.dueDate || !newGoal.description) {
+      // erro: campos obrigatórios
+      return;
+    }
+    try {
+      await pdiService.addGoal(newGoal);
+      setShowAddGoalModal(false);
+      setNewGoal({ title: '', category: 'Técnico', priority: 'high', dueDate: '', description: '', milestones: ["", "", "", ""] });
+      const data = await pdiService.getPDI();
+      setPdiData(data);
+    } catch {
+      // erro ao adicionar meta
+    }
+  };
+  
+  const handleDeleteGoal = async (goalId) => {
+    try {
+      await pdiService.deleteGoal(goalId);
+      setShowGoalDetails(false);
+      const data = await pdiService.getPDI();
+      setPdiData(data);
+    } catch {
+      // erro ao excluir meta
+    }
+  };
+  
+  const handleToggleMilestone = async (goalId, milestoneId) => {
+    try {
+      await pdiService.toggleMilestone(goalId, milestoneId);
+      const data = await pdiService.getPDI();
+      setPdiData(data);
+    } catch {
+      // erro ao atualizar milestone
+    }
+  };
+  
+  const handleExportPDI = async () => {
+    try {
+      const blob = await pdiService.exportPDI();
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'meu_pdi.pdf');
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+    } catch {
+      // erro ao exportar PDI
+    }
+  };
+  
+  // Navegação para detalhes de meta
+  const handleViewGoalDetails = (goal) => {
+    setCurrentGoalDetails(goal);
+    setShowGoalDetails(true);
+  };
+  
+  
+  // ...existing code...
 
   // Dados dos cursos de desenvolvimento
-  const developmentCourses = [
-    {
-      id: 1,
-      type: 'course',
-      title: 'AWS Solutions Architect Associate',
-      description: 'Curso preparatório completo para certificação AWS Solutions Architect Associate',
-      provider: 'A Cloud Guru',
-      duration: '40h',
-      category: 'Cloud Computing',
-      level: 'Intermediário',
-      enrolled: true,
-      progress: 65,
-      instructor: 'Ryan Kroonenburg',
-      rating: 4.8,
-      reviews: 12543,
-      topics: [
-        'EC2 e EBS',
-        'S3 e Glacier',
-        'VPC e Networking',
-        'IAM e Security',
-        'CloudFormation',
-        'Auto Scaling e Load Balancing'
-      ],
-      requirements: [
-        'Conhecimento básico de cloud',
-        'Experiência com infraestrutura',
-        'Fundamentos de networking'
-      ],
-      certificate: true,
-      url: 'https://acloudguru.com/course/aws-certified-solutions-architect-associate'
-    },
-    {
-      id: 2,
-      type: 'course',
-      title: 'Liderança para Desenvolvedores',
-      description: 'Desenvolva habilidades essenciais de gestão, mentoria e liderança técnica',
-      provider: 'Coursera',
-      duration: '25h',
-      category: 'Liderança',
-      level: 'Avançado',
-      enrolled: false,
-      progress: 0,
-      instructor: 'Sarah Johnson',
-      rating: 4.7,
-      reviews: 8932,
-      topics: [
-        'Estilos de liderança',
-        'Mentoria eficaz',
-        'Gestão de conflitos',
-        'Comunicação assertiva',
-        'Delegação de tarefas',
-        'Desenvolvimento de equipes'
-      ],
-      requirements: [
-        'Experiência mínima de 3 anos',
-        'Desejo de assumir liderança',
-        'Habilidades interpessoais'
-      ],
-      certificate: true,
-      url: 'https://coursera.org/learn/leadership-for-developers'
-    },
-    {
-      id: 3,
-      type: 'course',
-      title: 'Microservices Architecture',
-      description: 'Aprenda a projetar, desenvolver e implantar arquiteturas de microserviços escaláveis',
-      provider: 'Udemy',
-      duration: '32h',
-      category: 'Arquitetura',
-      level: 'Avançado',
-      enrolled: true,
-      progress: 28,
-      instructor: 'Martin Fowler',
-      rating: 4.9,
-      reviews: 15234,
-      topics: [
-        'Princípios de microserviços',
-        'Domain-Driven Design',
-        'API Gateway patterns',
-        'Service mesh',
-        'Docker e Kubernetes',
-        'Monitoramento distribuído'
-      ],
-      requirements: [
-        'Experiência com APIs REST',
-        'Conhecimento de containers',
-        'Programação backend'
-      ],
-      certificate: true,
-      url: 'https://udemy.com/course/microservices-architecture'
-    },
-    {
-      id: 4,
-      type: 'book',
-      title: 'Clean Architecture',
-      description: 'Guia completo sobre princípios de arquitetura de software limpa e sustentável',
-      provider: 'Robert C. Martin',
-      duration: 'Leitura estimada: 12h',
-      category: 'Arquitetura de Software',
-      level: 'Intermediário',
-      enrolled: false,
-      progress: 0,
-      author: 'Robert C. Martin (Uncle Bob)',
-      rating: 4.6,
-      reviews: 3421,
-      topics: [
-        'Princípios SOLID',
-        'Componentes e limites',
-        'Arquitetura em camadas',
-        'Independência de frameworks',
-      'Testabilidade',
-        'Design patterns'
-      ],
-      requirements: [
-        'Experiência em programação OO',
-        'Conhecimento de design patterns',
-        'Vontade de aprender'
-      ],
-      certificate: false,
-      url: 'https://www.amazon.com/Clean-Architecture-Craftsmans-Software-Structure/dp/0134494164'
-    },
-    {
-      id: 5,
-      type: 'course',
-      title: 'TypeScript Masterclass',
-      description: 'Domine TypeScript do básico ao avançado com projetos práticos',
-      provider: 'Frontend Masters',
-      duration: '18h',
-      category: 'Programação',
-      level: 'Intermediário',
-      enrolled: false,
-      progress: 0,
-      instructor: 'Mike North',
-      rating: 4.8,
-      reviews: 6745,
-      topics: [
-        'Type system fundamentals',
-        'Generics avançados',
-        'Utility types',
-        'Decorators',
-        'Module resolution',
-        'Performance optimization'
-      ],
-      requirements: [
-        'JavaScript intermediário',
-        'Conhecimento de ES6+',
-        'Experiência com projetos web'
-      ],
-      certificate: true,
-      url: 'https://frontendmasters.com/courses/typescript'
-    },
-    {
-      id: 6,
-      type: 'event',
-      title: 'AWS re:Invent 2024',
-      description: 'Maior conferência anual da AWS com palestras, workshops e networking',
-      provider: 'Amazon Web Services',
-      duration: '5 dias',
-      category: 'Eventos e Conferências',
-      level: 'Todos os níveis',
-      enrolled: false,
-      progress: 0,
-      location: 'Las Vegas, Nevada',
-      date: '2-6 Dezembro 2024',
-      rating: 4.9,
-      reviews: 25432,
-      topics: [
-        'Novas features AWS',
-        'Casos de sucesso',
-        'Workshops práticos',
-        'Certificação e treinamento',
-        'Networking com experts',
-        'Keynotes executivos'
-      ],
-      requirements: [
-        'Interesse em cloud computing',
-        'Registro antecipado',
-        'Investimento em viagem'
-      ],
-      certificate: false,
-      url: 'https://reinvent.awsevents.com/'
-    }
-  ];
 
   // Formulário para nova meta
-  const [newGoal, setNewGoal] = useState({
-    title: '',
-    category: 'Técnico',
-    description: '',
-    priority: 'medium',
-    dueDate: '',
-    milestones: ['', '', '', '']
-  });
-
-  // Usar dados reais do usuário ou fallback
-  const profileData = user ? {
-    name: user.nome || 'Usuário',
-    role: user.cargo || 'Cargo não definido',
-    department: user.senioridade || 'Departamento',
-    manager: 'Gestor não definido', // TODO: Adicionar relação de gestor no backend
-    period: new Date().getFullYear().toString(),
-    lastUpdate: new Date().toISOString().split('T')[0],
-    email: user.email || '',
-    avatar: user.foto_url || '👤',
-  } : {
-    name: 'Usuário',
-    role: 'Cargo não definido',
-    department: 'Departamento',
-    manager: 'Gestor não definido',
-    period: new Date().getFullYear().toString(),
-    lastUpdate: new Date().toISOString().split('T')[0],
-    email: '',
-    avatar: '👤',
-  };
-
-  const pdiData = {
-    profile: profileData,
-    stats: {
-      overallProgress: 73,
-      goalsCompleted: goals.filter(g => g.status === 'completed').length,
-      goalsInProgress: goals.filter(g => g.status === 'in-progress').length,
-      goalsPending: goals.filter(g => g.status === 'pending').length,
-      skillsImproved: 8
-    },
-    goals: goals,
-    skills: [
-      { name: 'React/Next.js', current: 9, target: 10, category: 'Frontend' },
-      { name: 'TypeScript', current: 8, target: 9, category: 'Frontend' },
-      { name: 'AWS', current: 6, target: 8, category: 'Cloud' },
-      { name: 'Liderança', current: 7, target: 9, category: 'Soft Skills' },
-      { name: 'Arquitetura', current: 7, target: 8, category: 'Técnico' },
-      { name: 'Mentoria', current: 6, target: 8, category: 'Liderança' }
-    ]
-  };
+  // All newGoal and pdiData state is now handled by backend integration and top-level useState hooks only
+  // ...existing code...
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -320,174 +135,8 @@ const PDI = () => {
   };
 
   // Funções para gerenciar nova meta
-  const handleOpenAddGoalModal = () => {
-    setShowAddGoalModal(true);
-    setNewGoal({
-      title: '',
-      category: 'Técnico',
-      description: '',
-      priority: 'medium',
-      dueDate: '',
-      milestones: ['', '', '', '']
-    });
-  };
-
-  const handleCloseAddGoalModal = () => {
-    setShowAddGoalModal(false);
-  };
-
-  const handleNewGoalChange = (field, value) => {
-    setNewGoal(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const handleMilestoneChange = (index, value) => {
-    const updatedMilestones = [...newGoal.milestones];
-    updatedMilestones[index] = value;
-    setNewGoal(prev => ({
-      ...prev,
-      milestones: updatedMilestones
-    }));
-  };
-
-  // Visualizar detalhes da meta
-  const handleViewGoalDetails = (goal) => {
-    setCurrentGoalDetails(goal);
-    setShowGoalDetails(true);
-  };
-
-  const handleCloseGoalDetails = () => {
-    setShowGoalDetails(false);
-    setCurrentGoalDetails(null);
-  };
-
-  // Atualizar progresso de milestone
-  const handleToggleMilestone = (goalId, milestoneId) => {
-    setGoals(prevGoals => {
-      return prevGoals.map(goal => {
-        if (goal.id === goalId) {
-          const updatedMilestones = goal.milestones.map(milestone => {
-            if (milestone.id === milestoneId) {
-              return { ...milestone, completed: !milestone.completed };
-            }
-            return milestone;
-          });
-          
-          // Calcular novo progresso
-          const completedCount = updatedMilestones.filter(m => m.completed).length;
-          const newProgress = Math.round((completedCount / updatedMilestones.length) * 100);
-          
-          // Atualizar status baseado no progresso
-          let newStatus = goal.status;
-          if (newProgress === 100) {
-            newStatus = 'completed';
-          } else if (newProgress > 0) {
-            newStatus = 'in-progress';
-          } else {
-            newStatus = 'pending';
-          }
-          
-          return {
-            ...goal,
-            milestones: updatedMilestones,
-            progress: newProgress,
-            status: newStatus
-          };
-        }
-        return goal;
-      });
-    });
-    
-    if (window.showNotification) {
-      window.showNotification('Marco atualizado! 🎯', 'success');
-    }
-  };
-
-  // Deletar meta
-  const handleDeleteGoal = (goalId) => {
-    if (window.confirm('Tem certeza que deseja excluir esta meta?')) {
-      setGoals(prevGoals => prevGoals.filter(goal => goal.id !== goalId));
-      setShowGoalDetails(false);
-      
-      if (window.showNotification) {
-        window.showNotification('Meta excluída com sucesso', 'info');
-      }
-    }
-  };
-
-  // Exportar PDI
-  const handleExportPDI = () => {
-    if (window.showNotification) {
-      window.showNotification('Exportando PDI em PDF... 📄', 'info', 2000);
-    }
-    
-    // Simular export
-    setTimeout(() => {
-      if (window.showNotification) {
-        window.showNotification('PDI exportado com sucesso! ✅', 'success');
-      }
-    }, 2000);
-  };
-
-  const handleAddGoal = () => {
-    // Validações
-    if (!newGoal.title.trim()) {
-      if (window.showNotification) {
-        window.showNotification('Por favor, insira um título para a meta', 'warning');
-      } else {
-        alert('Por favor, insira um título para a meta');
-      }
-      return;
-    }
-
-    if (!newGoal.description.trim()) {
-      if (window.showNotification) {
-        window.showNotification('Por favor, insira uma descrição para a meta', 'warning');
-      } else {
-        alert('Por favor, insira uma descrição para a meta');
-      }
-      return;
-    }
-
-    if (!newGoal.dueDate) {
-      if (window.showNotification) {
-        window.showNotification('Por favor, selecione uma data de conclusão', 'warning');
-      } else {
-        alert('Por favor, selecione uma data de conclusão');
-      }
-      return;
-    }
-
-    // Criar nova meta
-    const goal = {
-      id: goals.length + 1,
-      title: newGoal.title,
-      category: newGoal.category,
-      description: newGoal.description,
-      progress: 0,
-      status: 'pending',
-      priority: newGoal.priority,
-      dueDate: newGoal.dueDate,
-      milestones: newGoal.milestones
-        .filter(m => m.trim() !== '')
-        .map((m, index) => ({
-          id: index + 1,
-          title: m,
-          completed: false
-        }))
-    };
-
-    setGoals(prev => [...prev, goal]);
-    setShowAddGoalModal(false);
-
-    if (window.showNotification) {
-      window.showNotification(`Meta "${goal.title}" adicionada com sucesso! 🎯`, 'success');
-    }
-
-    console.log('✅ Nova meta adicionada:', goal);
-  };
+  // All goal-related state and logic is now handled by backend integration (see above CRUD functions)
+  // Modal open/close and field change handlers remain, but only use the single setNewGoal and setShowAddGoalModal from above
 
   // Funções para modal de cursos
   const handleOpenCourseDetails = (course) => {
@@ -544,8 +193,12 @@ const PDI = () => {
     }
   };
 
+  if (!pdiData) {
+    return null;
+  }
   return (
     <div className="pdi-container">
+        {/* ...existing code... */}
         {/* PDI Header Profissional */}
         <div className="pdi-header-professional">
           {/* Informações do Perfil Integradas */}
@@ -977,101 +630,101 @@ const PDI = () => {
                   <div className="category-section">
                     <h4>🎓 Cursos Recomendados</h4>
                     <div className="resource-list">
-                      {developmentCourses.filter(c => c.type === 'course').map(course => (
-                        <div key={course.id} className="resource-item">
-                          <div className="resource-icon">{getCourseIcon(course.type)}</div>
-                          <div className="resource-content">
-                            <div className="resource-title">{course.title}</div>
-                            <div className="resource-description">{course.description}</div>
-                            <div className="resource-provider">{course.provider} • {course.duration}</div>
-                            {course.enrolled && (
-                              <div className="resource-progress-mini">
-                                <div className="progress-bar-mini">
-                                  <div 
-                                    className="progress-fill-mini" 
-                                    style={{width: `${course.progress}%`}}
-                                  ></div>
+                        {pdiData.resources.filter(r => r.type === 'course').map(course => (
+                          <div key={course.id} className="resource-item">
+                            <div className="resource-icon">{getCourseIcon(course.type)}</div>
+                            <div className="resource-content">
+                              <div className="resource-title">{course.title}</div>
+                              <div className="resource-description">{course.description}</div>
+                              <div className="resource-provider">{course.provider} • {course.duration}</div>
+                              {course.enrolled && (
+                                <div className="resource-progress-mini">
+                                  <div className="progress-bar-mini">
+                                    <div 
+                                      className="progress-fill-mini" 
+                                      style={{width: `${course.progress}%`}}
+                                    ></div>
+                                  </div>
+                                  <span className="progress-text-mini">{course.progress}% concluído</span>
                                 </div>
-                                <span className="progress-text-mini">{course.progress}% concluído</span>
-                              </div>
-                            )}
+                              )}
+                            </div>
+                            <div className="resource-actions">
+                              <button 
+                                className="btn-outline small"
+                                onClick={() => handleOpenCourseDetails(course)}
+                              >
+                                Ver Detalhes
+                              </button>
+                              <button 
+                                className={`btn-primary small ${course.enrolled ? 'enrolled' : ''}`}
+                                onClick={() => handleOpenCourseAccess(course)}
+                              >
+                                {course.enrolled ? 'Continuar' : 'Acessar'}
+                              </button>
+                            </div>
                           </div>
-                          <div className="resource-actions">
-                            <button 
-                              className="btn-outline small"
-                              onClick={() => handleOpenCourseDetails(course)}
-                            >
-                              Ver Detalhes
-                            </button>
-                            <button 
-                              className={`btn-primary small ${course.enrolled ? 'enrolled' : ''}`}
-                              onClick={() => handleOpenCourseAccess(course)}
-                            >
-                              {course.enrolled ? 'Continuar' : 'Acessar'}
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                        ))}
                     </div>
                   </div>
 
                   <div className="category-section">
                     <h4>📖 Livros Sugeridos</h4>
                     <div className="resource-list">
-                      {developmentCourses.filter(c => c.type === 'book').map(course => (
-                        <div key={course.id} className="resource-item">
-                          <div className="resource-icon">{getCourseIcon(course.type)}</div>
-                          <div className="resource-content">
-                            <div className="resource-title">{course.title}</div>
-                            <div className="resource-description">{course.description}</div>
-                            <div className="resource-provider">{course.provider}</div>
+                        {pdiData.resources.filter(r => r.type === 'book').map(book => (
+                          <div key={book.id} className="resource-item">
+                            <div className="resource-icon">{getCourseIcon(book.type)}</div>
+                            <div className="resource-content">
+                              <div className="resource-title">{book.title}</div>
+                              <div className="resource-description">{book.description}</div>
+                              <div className="resource-provider">{book.provider}</div>
+                            </div>
+                            <div className="resource-actions">
+                              <button 
+                                className="btn-outline small"
+                                onClick={() => handleOpenCourseDetails(book)}
+                              >
+                                Ver Detalhes
+                              </button>
+                              <button 
+                                className="btn-primary small"
+                                onClick={() => handleOpenCourseAccess(book)}
+                              >
+                                Acessar
+                              </button>
+                            </div>
                           </div>
-                          <div className="resource-actions">
-                            <button 
-                              className="btn-outline small"
-                              onClick={() => handleOpenCourseDetails(course)}
-                            >
-                              Ver Detalhes
-                            </button>
-                            <button 
-                              className="btn-primary small"
-                              onClick={() => handleOpenCourseAccess(course)}
-                            >
-                              Acessar
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                        ))}
                     </div>
                   </div>
 
                   <div className="category-section">
                     <h4>🎤 Eventos e Conferências</h4>
                     <div className="resource-list">
-                      {developmentCourses.filter(c => c.type === 'event').map(course => (
-                        <div key={course.id} className="resource-item">
-                          <div className="resource-icon">{getCourseIcon(course.type)}</div>
-                          <div className="resource-content">
-                            <div className="resource-title">{course.title}</div>
-                            <div className="resource-description">{course.description}</div>
-                            <div className="resource-provider">{course.location} • {course.date}</div>
+                        {pdiData.resources.filter(r => r.type === 'event').map(event => (
+                          <div key={event.id} className="resource-item">
+                            <div className="resource-icon">{getCourseIcon(event.type)}</div>
+                            <div className="resource-content">
+                              <div className="resource-title">{event.title}</div>
+                              <div className="resource-description">{event.description}</div>
+                              <div className="resource-provider">{event.location} • {event.date}</div>
+                            </div>
+                            <div className="resource-actions">
+                              <button 
+                                className="btn-outline small"
+                                onClick={() => handleOpenCourseDetails(event)}
+                              >
+                                Ver Detalhes
+                              </button>
+                              <button 
+                                className="btn-primary small"
+                                onClick={() => handleOpenCourseAccess(event)}
+                              >
+                                Interessado
+                              </button>
+                            </div>
                           </div>
-                          <div className="resource-actions">
-                            <button 
-                              className="btn-outline small"
-                              onClick={() => handleOpenCourseDetails(course)}
-                            >
-                              Ver Detalhes
-                            </button>
-                            <button 
-                              className="btn-primary small"
-                              onClick={() => handleOpenCourseAccess(course)}
-                            >
-                              Interessado
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                        ))}
                     </div>
                   </div>
                 </div>
@@ -1592,6 +1245,5 @@ const PDI = () => {
         )}
     </div>
   );
-};
-
+}
 export default PDI;

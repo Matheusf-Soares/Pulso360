@@ -1,35 +1,52 @@
-import React, { useState } from "react";
-import { useAuth } from '../contexts/AuthContext';
+import React, { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
+import avaliacoesService from '../services/avaliacoesService';
 
 export default function Avaliacoes() {
-  const { user } = useAuth();
   const navigate = useNavigate();
-  
-  // Informações do usuário logado
-  const currentUser = user ? {
-    name: user.nome || 'Usuário',
-    role: user.cargo || 'Cargo'
-  } : {
-    name: 'Usuário',
-    role: 'Cargo'
-  };
 
-  const [evaluations] = useState([
-    { id: 1, title: "Autoavaliação Q1 2025", type: "Autoavaliação", status: "Em andamento", progress: 68, deadline: "25 Nov 2025", evaluator: currentUser.name },
-    { id: 2, title: "Avaliação de Performance", type: "360°", status: "Aguardando", progress: 0, deadline: "30 Nov 2025", evaluator: "Gestor" },
-    { id: 3, title: "Avaliação de Liderança", type: "Gestor", status: "Concluída", progress: 100, deadline: "15 Nov 2025", evaluator: user?.gestor || "Gestor" },
-  ]);
-
+  const [evaluations, setEvaluations] = useState([]);
+  const [stats, setStats] = useState({ total: 0, pending: 0, completed: 0, avgScore: 0 });
   const [filters, setFilters] = useState({ status: "Todas", type: "Todas" });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  // Estatísticas para o header
-  const stats = {
-    total: evaluations.length,
-    pending: evaluations.filter(e => e.status === "Em andamento" || e.status === "Aguardando").length,
-    completed: evaluations.filter(e => e.status === "Concluída").length,
-    avgScore: 8.5
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      setError("");
+      try {
+        const [evals, stat] = await Promise.all([
+          avaliacoesService.list(filters),
+          avaliacoesService.stats()
+        ]);
+        setEvaluations(evals);
+        setStats(stat);
+      } catch (e) {
+        setError("Erro ao carregar avaliações");
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, [filters]);
+
+  const handleExport = async () => {
+    try {
+      const blob = await avaliacoesService.export(filters);
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'avaliacoes.csv');
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+    } catch {
+      setError('Erro ao exportar avaliações');
+    }
   };
+
+  const handleClearFilters = () => setFilters({ status: 'Todas', type: 'Todas' });
 
   const filteredEvaluations = evaluations.filter(evaluation => 
     (filters.status === "Todas" || evaluation.status === filters.status) &&
@@ -62,15 +79,14 @@ export default function Avaliacoes() {
               <p>Gerencie suas avaliações de desempenho e acompanhe seu desenvolvimento profissional</p>
             </div>
           </div>
-          
           <div className="header-right-section">
-            <button className="btn-header-secondary">
+            <button className="btn-header-secondary" onClick={() => navigate('/avaliacoes/historico')}>
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                 <path d="M16 2H14V0H12V2H6V0H4V2H2C0.89 2 0 2.9 0 4V16C0 17.1 0.89 18 2 18H16C17.1 18 18 17.1 18 16V4C18 2.9 17.1 2 16 2ZM16 16H2V7H16V16Z" fill="currentColor"/>
               </svg>
               Histórico
             </button>
-            <button className="btn-header-primary">
+            <button className="btn-header-primary" onClick={handleExport}>
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                 <path d="M9 13.5L4.5 9L6 7.5L8.25 9.75V0H9.75V9.75L12 7.5L13.5 9L9 13.5Z" fill="currentColor"/>
                 <path d="M0 15.75V18H18V15.75H0Z" fill="currentColor"/>
@@ -144,7 +160,6 @@ export default function Avaliacoes() {
           </h3>
           <span className="results-count">{filteredEvaluations.length} {filteredEvaluations.length === 1 ? 'avaliação' : 'avaliações'}</span>
         </div>
-        
         <div className="filters-right">
           <div className="filter-group-modern">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -157,7 +172,6 @@ export default function Avaliacoes() {
               <option value="Concluída">Concluída</option>
             </select>
           </div>
-          
           <div className="filter-group-modern">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M8 0L10.4 5.6L16 6.4L11.6 10.4L12.8 16L8 13.2L3.2 16L4.4 10.4L0 6.4L5.6 5.6L8 0Z" fill="currentColor"/>
@@ -169,8 +183,12 @@ export default function Avaliacoes() {
               <option value="Gestor">Gestor</option>
             </select>
           </div>
+          <button className="btn-clear-filters" onClick={handleClearFilters}>Limpar Filtros</button>
         </div>
       </div>
+
+      {loading && <div className="loader">Carregando...</div>}
+      {error && <div className="error-message">{error}</div>}
 
       {/* Grid de Avaliações Moderno */}
       <div className="evaluations-grid-modern">

@@ -1,3 +1,4 @@
+import NovaTarefa from './pages/NovaTarefa';
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -50,6 +51,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/cadastro" element={<Cadastro />} />
           <Route path="/recuperar-senha" element={<RecuperarSenha />} />
+            <Route path="/tarefas/nova" element={<NovaTarefa />} />
           
           {/* Rotas protegidas - requerem autenticação */}
           <Route
