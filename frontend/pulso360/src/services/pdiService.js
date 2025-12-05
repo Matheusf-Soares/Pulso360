@@ -1,5 +1,5 @@
 // pdiService.js - Service para integração do PDI com backend
-import api from './api';
+import api from './apiClient';
 
 const pdiService = {
   async getPDI() {
