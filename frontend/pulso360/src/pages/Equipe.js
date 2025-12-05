@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import membroEquipeService from '../services/membroEquipeService';
+import equipeService from '../services/equipeService';
 
 const Equipe = () => {
   const { user } = useAuth();
@@ -17,7 +19,14 @@ const Equipe = () => {
     startDate: ''
   });
 
+  // State para dados da API
+  const [equipe, setEquipe] = useState(null);
+  const [membros, setMembros] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   // Informações do usuário logado
+  // eslint-disable-next-line no-unused-vars
   const currentUser = user ? {
     name: user.nome || 'Usuário',
     role: user.cargo || 'Cargo',
@@ -30,57 +39,161 @@ const Equipe = () => {
     manager: 'Não atribuído'
   };
 
-  // Dados da equipe - exemplo (em produção virá do backend filtrado pelo departamento/equipe do usuário)
-  const teamData = {
-    totalMembers: 8,
-    departments: [currentUser.department, 'Design', 'Marketing'],
-    members: [
-      {
-        id: 1,
-        name: 'Ana Silva',
-        role: 'Desenvolvedora Frontend',
-        department: currentUser.department,
-        status: 'ativo',
-        performance: 85,
-        avatar: '👩‍💻'
-      },
-      {
-        id: 2,
-        name: 'Bruno Costa',
-        role: 'Designer UX',
-        department: 'Design',
-        status: 'ativo',
-        performance: 92,
-        avatar: '👨‍🎨'
-      },
-      {
-        id: 3,
-        name: currentUser.manager,
-        role: 'Gestor',
-        department: currentUser.department,
-        status: 'ativo',
-        performance: 95,
-        avatar: '👨‍💼',
-        isManager: true
-      },
-      {
-        id: 4,
-        name: 'Diana Santos',
-        role: 'Desenvolvedora Backend',
-        department: currentUser.department,
-        status: 'inativo',
-        performance: 88,
-        avatar: '👩‍💻'
+  // Carregar dados da equipe e membros
+  useEffect(() => {
+    if (user?.id) {
+      loadData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Buscar equipe do usuário (primeiro como líder, depois como membro)
+      let equipesResponse = await equipeService.list({ lider_id: user.id });
+      
+      if (!equipesResponse.items || equipesResponse.items.length === 0) {
+        // Se não é líder, buscar como membro
+        const membrosResponse = await membroEquipeService.getByUsuario(user.id);
+        if (membrosResponse.items && membrosResponse.items.length > 0) {
+          const primeiroMembro = membrosResponse.items[0];
+          const equipeDetalhe = await equipeService.getById(primeiroMembro.equipe_id);
+          setEquipe(equipeDetalhe);
+          
+          // Carregar todos os membros da equipe
+          const membrosEquipeResponse = await membroEquipeService.getByEquipe(primeiroMembro.equipe_id);
+          setMembros(membrosEquipeResponse.items || []);
+        } else {
+          setError('Você não está associado a nenhuma equipe.');
+        }
+      } else {
+        // É líder da equipe
+        const equipePrincipal = equipesResponse.items[0];
+        setEquipe(equipePrincipal);
+        
+        // Carregar membros da equipe
+        const membrosResponse = await membroEquipeService.getByEquipe(equipePrincipal.id);
+        setMembros(membrosResponse.items || []);
       }
-    ]
+    } catch (err) {
+      console.error('Erro ao carregar dados da equipe:', err);
+      setError('Erro ao carregar informações da equipe. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handler para promover membro a líder
+  const handlePromoverLider = async (membro) => {
+    if (!window.confirm('Deseja promover este membro a líder da equipe?')) {
+      return;
+    }
+
+    try {
+      await membroEquipeService.promoverLider(membro.equipe_id, membro.usuario_id);
+      if (window.showNotification) {
+        window.showNotification('Membro promovido a líder com sucesso!', 'success', 3000);
+      }
+      await loadData(); // Recarregar dados
+    } catch (err) {
+      console.error('Erro ao promover líder:', err);
+      if (window.showNotification) {
+        window.showNotification('Erro ao promover membro a líder', 'error', 3000);
+      }
+    }
+  };
+
+  // Handler para remover liderança de um membro
+  const handleRemoverLider = async (membro) => {
+    if (!window.confirm('Deseja remover a liderança deste membro?')) {
+      return;
+    }
+
+    try {
+      await membroEquipeService.removerLider(membro.equipe_id, membro.usuario_id);
+      if (window.showNotification) {
+        window.showNotification('Liderança removida com sucesso!', 'success', 3000);
+      }
+      await loadData(); // Recarregar dados
+    } catch (err) {
+      console.error('Erro ao remover liderança:', err);
+      if (window.showNotification) {
+        window.showNotification('Erro ao remover liderança', 'error', 3000);
+      }
+    }
+  };
+
+  // Handler para adicionar novo membro à equipe
+  const handleAddMember = async () => {
+    // Validar campos obrigatórios
+    if (!newMember.name || !newMember.email || !newMember.role || !newMember.department || !newMember.startDate) {
+      alert('Por favor, preencha todos os campos obrigatórios.');
+      return;
+    }
+
+    if (!equipe) {
+      alert('Erro: Equipe não encontrada.');
+      return;
+    }
+
+    try {
+      // NOTA: Esta implementação é simplificada.
+      // Em produção, você precisaria:
+      // 1. Buscar ou criar o usuário primeiro com os dados do formulário
+      // 2. Depois adicionar o usuário à equipe usando o usuario_id retornado
+      
+      // Por ora, apenas simulamos o comportamento
+      alert('ATENÇÃO: Para adicionar um membro, você deve primeiro criar o usuário no sistema. ' +
+            'Esta funcionalidade será implementada nas próximas iterações.\n\n' +
+            'Dados coletados:\n' +
+            `Nome: ${newMember.name}\n` +
+            `Email: ${newMember.email}\n` +
+            `Cargo: ${newMember.role}\n` +
+            `Departamento: ${newMember.department}`);
+      
+      // TODO: Implementar integração com usuarioService para criar usuário
+      // const novoUsuario = await usuarioService.create({
+      //   nome: newMember.name,
+      //   email: newMember.email,
+      //   cargo: newMember.role,
+      //   departamento: newMember.department,
+      //   telefone: newMember.phone
+      // });
+      
+      // await membroEquipeService.create({
+      //   equipe_id: equipe.id,
+      //   usuario_id: novoUsuario.id,
+      //   e_lider: false
+      // });
+      
+      // alert('Membro adicionado com sucesso!');
+      // await loadData();
+      
+      setShowAddModal(false);
+      setNewMember({ name: '', email: '', role: '', department: '', phone: '', startDate: '' });
+    } catch (err) {
+      console.error('Erro ao adicionar membro:', err);
+      alert('Erro ao adicionar membro à equipe. Tente novamente.');
+    }
   };
 
   // Filtrar membros baseado na busca
-  const filteredMembers = teamData.members.filter(member =>
-    member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    member.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    member.department.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredMembers = membros.filter(membro =>
+    (membro.usuario?.nome || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (membro.usuario?.cargo || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (membro.usuario?.departamento || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Calcular estatísticas da equipe
+  const departamentos = [...new Set(membros.map(m => m.usuario?.departamento).filter(Boolean))];
+  const totalMembros = membros.length;
+  const membrosAtivos = membros.filter(m => m.ativo).length;
+  const performanceMedia = membros.length > 0
+    ? Math.round(membros.reduce((acc, m) => acc + (m.usuario?.performance || 75), 0) / membros.length)
+    : 0;
 
   const tabs = [
     { id: 'visao-geral', label: 'Visão Geral', icon: '📊' },
@@ -88,24 +201,53 @@ const Equipe = () => {
     { id: 'performance', label: 'Performance', icon: '📈' }
   ];
 
+  // Renderizar loading
+  if (loading) {
+    return (
+      <div className="home-container">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Carregando informações da equipe...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Renderizar erro
+  if (error) {
+    return (
+      <div className="home-container">
+        <div className="error-container">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+            <circle cx="32" cy="32" r="32" fill="#fee" />
+            <path d="M32 20C25.4 20 20 25.4 20 32C20 38.6 25.4 44 32 44C38.6 44 44 38.6 44 32C44 25.4 38.6 20 32 20ZM34 38H30V34H34V38ZM34 30H30V26H34V30Z" fill="#e74c3c"/>
+          </svg>
+          <h3>Erro ao carregar equipe</h3>
+          <p>{error}</p>
+          <button className="btn-retry" onClick={loadData}>Tentar Novamente</button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="team-page-professional">
+    <div className="home-container">
       {/* Header Moderno com Gradiente */}
-      <div className="team-header-modern">
-        <div className="header-content-wrapper">
-          <div className="header-left">
-            <div className="header-icon-wrapper">
+      <div className="home-header">
+        <div className="header-content">
+          <div className="welcome-section">
+            <div className="user-avatar-large">
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
                 <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" fill="white"/>
               </svg>
             </div>
-            <div className="header-text">
+            <div className="welcome-text">
               <h1>Gestão de Equipe</h1>
-              <p>Gerencie e acompanhe sua equipe de forma eficiente</p>
+              <p className="welcome-subtitle">Gerencie e acompanhe sua equipe de forma eficiente</p>
             </div>
           </div>
           
-          <div className="header-right">
+          <div className="header-controls">
             <button className="btn-header-secondary">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <path d="M8 12L3 7L4.4 5.55L7 8.15V0H9V8.15L11.6 5.55L13 7L8 12Z" fill="currentColor"/>
@@ -124,7 +266,7 @@ const Equipe = () => {
       </div>
 
       {/* Cards de Estatísticas Modernos */}
-      <div className="team-stats-modern">
+      <div className="home-stats">
         <div className="modern-team-stat total-members">
           <div className="stat-icon-modern">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
@@ -132,9 +274,9 @@ const Equipe = () => {
             </svg>
           </div>
           <div className="stat-details">
-            <span className="stat-value-modern">{teamData.totalMembers}</span>
+            <span className="stat-value-modern">{totalMembros}</span>
             <span className="stat-label-modern">Total de Membros</span>
-            <div className="stat-badge-modern success">+2 este mês</div>
+            <div className="stat-badge-modern success">{equipe?.nome || 'Equipe'}</div>
           </div>
         </div>
 
@@ -145,9 +287,11 @@ const Equipe = () => {
             </svg>
           </div>
           <div className="stat-details">
-            <span className="stat-value-modern">{teamData.members.filter(m => m.status === 'ativo').length}</span>
+            <span className="stat-value-modern">{membrosAtivos}</span>
             <span className="stat-label-modern">Membros Ativos</span>
-            <div className="stat-badge-modern info">{Math.round((teamData.members.filter(m => m.status === 'ativo').length / teamData.totalMembers) * 100)}% ativos</div>
+            <div className="stat-badge-modern info">
+              {totalMembros > 0 ? Math.round((membrosAtivos / totalMembros) * 100) : 0}% ativos
+            </div>
           </div>
         </div>
 
@@ -158,9 +302,9 @@ const Equipe = () => {
             </svg>
           </div>
           <div className="stat-details">
-            <span className="stat-value-modern">{teamData.departments.length}</span>
+            <span className="stat-value-modern">{departamentos.length}</span>
             <span className="stat-label-modern">Departamentos</span>
-            <div className="stat-badge-modern warning">3 áreas</div>
+            <div className="stat-badge-modern warning">{departamentos.length} {departamentos.length === 1 ? 'área' : 'áreas'}</div>
           </div>
         </div>
 
@@ -171,9 +315,9 @@ const Equipe = () => {
             </svg>
           </div>
           <div className="stat-details">
-            <span className="stat-value-modern">{Math.round(teamData.members.reduce((acc, m) => acc + m.performance, 0) / teamData.members.length)}%</span>
+            <span className="stat-value-modern">{performanceMedia}%</span>
             <span className="stat-label-modern">Performance Média</span>
-            <div className="stat-badge-modern success">↑ 5% vs mês anterior</div>
+            <div className="stat-badge-modern success">Equipe</div>
           </div>
         </div>
       </div>
@@ -194,29 +338,30 @@ const Equipe = () => {
       </div>
 
       {/* Conteúdo das Abas */}
-      <div className="team-content-modern">{/* Aba Visão Geral */}
+      <div className="home-main">
+        {/* Aba Visão Geral */}
         {activeTab === 'visao-geral' && (
           <div className="tab-content-wrapper">
             <div className="overview-grid-modern">
               {/* Card de Distribuição por Departamento */}
-              <div className="overview-card-modern">
-                <div className="card-header-modern">
-                  <div className="card-icon-wrapper">
+              <div className="home-card">
+                <div className="card-header">
+                  <h3>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                       <path d="M12 7V3H2V21H22V7H12ZM6 19H4V17H6V19ZM6 15H4V13H6V15ZM6 11H4V9H6V11ZM6 7H4V5H6V7ZM10 19H8V17H10V19ZM10 15H8V13H10V15ZM10 11H8V9H10V11ZM10 7H8V5H10V7ZM20 19H12V17H14V15H12V13H14V11H12V9H20V19ZM18 11H16V13H18V11ZM18 15H16V17H18V15Z" fill="currentColor"/>
                     </svg>
-                  </div>
-                  <h3>Distribuição por Departamento</h3>
+                    Distribuição por Departamento
+                  </h3>
                 </div>
                 <div className="card-content-modern">
-                  {teamData.departments.map(dept => {
-                    const count = teamData.members.filter(m => m.department === dept).length;
-                    const percentage = Math.round((count / teamData.totalMembers) * 100);
+                  {departamentos.map(dept => {
+                    const count = membros.filter(m => m.usuario?.departamento === dept).length;
+                    const percentage = totalMembros > 0 ? Math.round((count / totalMembros) * 100) : 0;
                     return (
                       <div key={dept} className="dept-item-modern">
                         <div className="dept-header">
                           <span className="dept-name-modern">{dept}</span>
-                          <span className="dept-count-modern">{count} pessoas</span>
+                          <span className="dept-count-modern">{count} {count === 1 ? 'pessoa' : 'pessoas'}</span>
                         </div>
                         <div className="dept-progress-wrapper">
                           <div className="dept-bar-modern">
@@ -230,18 +375,21 @@ const Equipe = () => {
                       </div>
                     );
                   })}
+                  {departamentos.length === 0 && (
+                    <p className="empty-message">Nenhum departamento encontrado</p>
+                  )}
                 </div>
               </div>
 
               {/* Card de Status da Equipe */}
-              <div className="overview-card-modern">
-                <div className="card-header-modern">
-                  <div className="card-icon-wrapper">
+              <div className="home-card">
+                <div className="card-header">
+                  <h3>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                       <path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM9 17H7V10H9V17ZM13 17H11V7H13V17ZM17 17H15V13H17V17Z" fill="currentColor"/>
                     </svg>
-                  </div>
-                  <h3>Status da Equipe</h3>
+                    Status da Equipe
+                  </h3>
                 </div>
                 <div className="card-content-modern">
                   <div className="status-grid-modern">
@@ -252,7 +400,7 @@ const Equipe = () => {
                         </svg>
                       </div>
                       <div className="status-info-modern">
-                        <span className="status-count">{teamData.members.filter(m => m.status === 'ativo').length}</span>
+                        <span className="status-count">{membrosAtivos}</span>
                         <span className="status-text">Ativos</span>
                       </div>
                     </div>
@@ -264,7 +412,7 @@ const Equipe = () => {
                         </svg>
                       </div>
                       <div className="status-info-modern">
-                        <span className="status-count">{teamData.members.filter(m => m.status === 'inativo').length}</span>
+                        <span className="status-count">{totalMembros - membrosAtivos}</span>
                         <span className="status-text">Inativos</span>
                       </div>
                     </div>
@@ -288,12 +436,12 @@ const Equipe = () => {
                         fill="none"
                         stroke="#00b894"
                         strokeWidth="20"
-                        strokeDasharray={`${(teamData.members.filter(m => m.status === 'ativo').length / teamData.totalMembers) * 251.2} 251.2`}
+                        strokeDasharray={`${totalMembros > 0 ? (membrosAtivos / totalMembros) * 251.2 : 0} 251.2`}
                         strokeDashoffset="0"
                         transform="rotate(-90 50 50)"
                       />
                       <text x="50" y="55" textAnchor="middle" className="donut-text">
-                        {Math.round((teamData.members.filter(m => m.status === 'ativo').length / teamData.totalMembers) * 100)}%
+                        {totalMembros > 0 ? Math.round((membrosAtivos / totalMembros) * 100) : 0}%
                       </text>
                     </svg>
                   </div>
@@ -335,66 +483,102 @@ const Equipe = () => {
 
             {/* Grid de Membros Moderno */}
             <div className="members-grid-modern">
-              {filteredMembers.map(member => (
-                <div key={member.id} className={`member-card-modern ${member.status}`}>
-                  <div className="member-card-header">
-                    <div className="member-avatar-modern">
-                      <span className="avatar-emoji">{member.avatar}</span>
-                      <div className={`status-indicator ${member.status}`}></div>
-                    </div>
-                    <div className="member-basic-info">
-                      <h3 className="member-name-modern">{member.name}</h3>
-                      <p className="member-role-modern">{member.role}</p>
-                      <div className="member-department-badge">{member.department}</div>
-                    </div>
-                    {member.isManager && (
-                      <div className="manager-badge">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                          <path d="M8 0L10.4 5.6L16 6.4L11.6 10.4L12.8 16L8 13.2L3.2 16L4.4 10.4L0 6.4L5.6 5.6L8 0Z" fill="currentColor"/>
-                        </svg>
-                        Gestor
+              {filteredMembers.map(membro => {
+                const usuario = membro.usuario || {};
+                const performance = usuario.performance || 75;
+                const avatar = usuario.nome ? usuario.nome.charAt(0).toUpperCase() : '👤';
+                
+                return (
+                  <div key={membro.id} className={`member-card-modern ${membro.ativo ? 'ativo' : 'inativo'}`}>
+                    <div className="member-card-header">
+                      <div className="member-avatar-modern">
+                        <span className="avatar-emoji">{avatar}</span>
+                        <div className={`status-indicator ${membro.ativo ? 'ativo' : 'inativo'}`}></div>
                       </div>
-                    )}
-                  </div>
-                  
-                  <div className="member-performance-section">
-                    <div className="performance-header-modern">
-                      <span className="performance-label-modern">Performance</span>
-                      <span className="performance-value-modern">{member.performance}%</span>
+                      <div className="member-basic-info">
+                        <h3 className="member-name-modern">{usuario.nome || 'Nome não disponível'}</h3>
+                        <p className="member-role-modern">{usuario.cargo || 'Cargo não especificado'}</p>
+                        <div className="member-department-badge">{usuario.departamento || 'Sem departamento'}</div>
+                      </div>
+                      {membro.e_lider && (
+                        <div className="manager-badge">
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M8 0L10.4 5.6L16 6.4L11.6 10.4L12.8 16L8 13.2L3.2 16L4.4 10.4L0 6.4L5.6 5.6L8 0Z" fill="currentColor"/>
+                          </svg>
+                          Líder
+                        </div>
+                      )}
                     </div>
-                    <div className="performance-bar-modern">
-                      <div 
-                        className={`performance-fill-modern ${
-                          member.performance >= 90 ? 'excellent' : 
-                          member.performance >= 80 ? 'good' : 
-                          member.performance >= 70 ? 'regular' : 'needs-improvement'
-                        }`}
-                        style={{width: `${member.performance}%`}}
+                    
+                    <div className="member-performance-section">
+                      <div className="performance-header-modern">
+                        <span className="performance-label-modern">Performance</span>
+                        <span className="performance-value-modern">{performance}%</span>
+                      </div>
+                      <div className="performance-bar-modern">
+                        <div 
+                          className={`performance-fill-modern ${
+                            performance >= 90 ? 'excellent' : 
+                            performance >= 80 ? 'good' : 
+                            performance >= 70 ? 'regular' : 'needs-improvement'
+                          }`}
+                          style={{width: `${performance}%`}}
+                        >
+                          <div className="performance-shimmer"></div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="member-actions-modern">
+                      <button 
+                        className="member-btn-modern primary"
+                        onClick={() => navigate(`/membro/${usuario.id}`)}
                       >
-                        <div className="performance-shimmer"></div>
-                      </div>
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                          <path d="M8 1C4.13 1 1 4.13 1 8C1 11.87 4.13 15 8 15C11.87 15 15 11.87 15 8C15 4.13 11.87 1 8 1ZM8 4C9.1 4 10 4.9 10 6C10 7.1 9.1 8 8 8C6.9 8 6 7.1 6 6C6 4.9 6.9 4 8 4ZM8 13C6.33 13 4.82 12.15 4 10.85C4.03 9.49 6.67 8.75 8 8.75C9.32 8.75 11.97 9.49 12 10.85C11.18 12.15 9.67 13 8 13Z" fill="currentColor"/>
+                        </svg>
+                        Ver Perfil
+                      </button>
+                      {usuario.id !== user?.id && (
+                        <button 
+                          className="member-btn-modern success"
+                          onClick={() => navigate(`/avaliacoes/nova?avaliado_id=${usuario.id}`)}
+                          title="Avaliar membro"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M8 0L10.4 5.6L16 6.4L11.6 10.4L12.8 16L8 13.2L3.2 16L4.4 10.4L0 6.4L5.6 5.6L8 0Z" fill="currentColor"/>
+                          </svg>
+                          Avaliar
+                        </button>
+                      )}
+                      {!membro.e_lider && user?.id === equipe?.lider_id && (
+                        <button 
+                          className="member-btn-modern secondary"
+                          onClick={() => handlePromoverLider(membro)}
+                          title="Promover a líder"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M8 2L9.6 6.4L14 7.2L10.4 10.8L11.6 15.2L8 13.2L4.4 15.2L5.6 10.8L2 7.2L6.4 6.4L8 2Z" fill="currentColor"/>
+                          </svg>
+                          Promover
+                        </button>
+                      )}
+                      {membro.e_lider && user?.id === equipe?.lider_id && membro.usuario_id !== equipe?.lider_id && (
+                        <button 
+                          className="member-btn-modern warning"
+                          onClick={() => handleRemoverLider(membro)}
+                          title="Remover liderança"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M8 2L9.6 6.4L14 7.2L10.4 10.8L11.6 15.2L8 13.2L4.4 15.2L5.6 10.8L2 7.2L6.4 6.4L8 2Z" fill="currentColor" opacity="0.3"/>
+                          </svg>
+                          Remover Líder
+                        </button>
+                      )}
                     </div>
                   </div>
-                  
-                  <div className="member-actions-modern">
-                    <button 
-                      className="member-btn-modern primary"
-                      onClick={() => navigate(`/membro/${member.id}`)}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <path d="M8 1C4.13 1 1 4.13 1 8C1 11.87 4.13 15 8 15C11.87 15 15 11.87 15 8C15 4.13 11.87 1 8 1ZM8 4C9.1 4 10 4.9 10 6C10 7.1 9.1 8 8 8C6.9 8 6 7.1 6 6C6 4.9 6.9 4 8 4ZM8 13C6.33 13 4.82 12.15 4 10.85C4.03 9.49 6.67 8.75 8 8.75C9.32 8.75 11.97 9.49 12 10.85C11.18 12.15 9.67 13 8 13Z" fill="currentColor"/>
-                      </svg>
-                      Ver Perfil
-                    </button>
-                    <button className="member-btn-modern secondary">
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <path d="M2 11.5V14H4.5L11.8733 6.62667L9.37333 4.12667L2 11.5ZM13.8067 4.69333C14.0667 4.43333 14.0667 4.01333 13.8067 3.75333L12.2467 2.19333C11.9867 1.93333 11.5667 1.93333 11.3067 2.19333L10.0867 3.41333L12.5867 5.91333L13.8067 4.69333Z" fill="currentColor"/>
-                      </svg>
-                      Editar
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {filteredMembers.length === 0 && (
@@ -422,7 +606,9 @@ const Equipe = () => {
                   </svg>
                 </div>
                 <div className="perf-card-content">
-                  <span className="perf-card-value">{teamData.members.filter(m => m.performance >= 90).length}</span>
+                  <span className="perf-card-value">
+                    {membros.filter(m => (m.usuario?.performance || 75) >= 90).length}
+                  </span>
                   <span className="perf-card-label">Excelente (90%+)</span>
                   <div className="perf-card-badge excellent">Top Performance</div>
                 </div>
@@ -435,7 +621,12 @@ const Equipe = () => {
                   </svg>
                 </div>
                 <div className="perf-card-content">
-                  <span className="perf-card-value">{teamData.members.filter(m => m.performance >= 80 && m.performance < 90).length}</span>
+                  <span className="perf-card-value">
+                    {membros.filter(m => {
+                      const perf = m.usuario?.performance || 75;
+                      return perf >= 80 && perf < 90;
+                    }).length}
+                  </span>
                   <span className="perf-card-label">Bom (80-89%)</span>
                   <div className="perf-card-badge good">Bom Desempenho</div>
                 </div>
@@ -448,7 +639,12 @@ const Equipe = () => {
                   </svg>
                 </div>
                 <div className="perf-card-content">
-                  <span className="perf-card-value">{teamData.members.filter(m => m.performance >= 70 && m.performance < 80).length}</span>
+                  <span className="perf-card-value">
+                    {membros.filter(m => {
+                      const perf = m.usuario?.performance || 75;
+                      return perf >= 70 && perf < 80;
+                    }).length}
+                  </span>
                   <span className="perf-card-label">Regular (70-79%)</span>
                   <div className="perf-card-badge regular">Atenção</div>
                 </div>
@@ -461,7 +657,9 @@ const Equipe = () => {
                   </svg>
                 </div>
                 <div className="perf-card-content">
-                  <span className="perf-card-value">{teamData.members.filter(m => m.performance < 70).length}</span>
+                  <span className="perf-card-value">
+                    {membros.filter(m => (m.usuario?.performance || 75) < 70).length}
+                  </span>
                   <span className="perf-card-label">Precisa Melhorar</span>
                   <div className="perf-card-badge needs">Necessita Suporte</div>
                 </div>
@@ -481,41 +679,47 @@ const Equipe = () => {
               </div>
 
               <div className="ranking-list-modern">
-                {teamData.members
-                  .sort((a, b) => b.performance - a.performance)
-                  .map((member, index) => (
-                    <div key={member.id} className={`ranking-item-modern ${index < 3 ? 'top-performer' : ''}`}>
-                      <div className="rank-position-modern">
-                        {index === 0 && <span className="medal gold">🥇</span>}
-                        {index === 1 && <span className="medal silver">🥈</span>}
-                        {index === 2 && <span className="medal bronze">🥉</span>}
-                        {index > 2 && <span className="rank-number">#{index + 1}</span>}
-                      </div>
-                      
-                      <div className="rank-member-info">
-                        <div className="rank-avatar">{member.avatar}</div>
-                        <div className="rank-details">
-                          <span className="rank-name">{member.name}</span>
-                          <span className="rank-role">{member.role}</span>
+                {[...membros]
+                  .sort((a, b) => (b.usuario?.performance || 75) - (a.usuario?.performance || 75))
+                  .map((membro, index) => {
+                    const usuario = membro.usuario || {};
+                    const performance = usuario.performance || 75;
+                    const avatar = usuario.nome ? usuario.nome.charAt(0).toUpperCase() : '👤';
+                    
+                    return (
+                      <div key={membro.id} className={`ranking-item-modern ${index < 3 ? 'top-performer' : ''}`}>
+                        <div className="rank-position-modern">
+                          {index === 0 && <span className="medal gold">🥇</span>}
+                          {index === 1 && <span className="medal silver">🥈</span>}
+                          {index === 2 && <span className="medal bronze">🥉</span>}
+                          {index > 2 && <span className="rank-number">#{index + 1}</span>}
                         </div>
-                      </div>
-                      
-                      <div className="rank-performance">
-                        <div className="rank-score-wrapper">
-                          <span className="rank-score">{member.performance}%</span>
-                          <div className="rank-bar-mini">
-                            <div 
-                              className={`rank-fill-mini ${
-                                member.performance >= 90 ? 'excellent' : 
-                                member.performance >= 80 ? 'good' : 'regular'
-                              }`}
-                              style={{width: `${member.performance}%`}}
-                            ></div>
+                        
+                        <div className="rank-member-info">
+                          <div className="rank-avatar">{avatar}</div>
+                          <div className="rank-details">
+                            <span className="rank-name">{usuario.nome || 'Nome não disponível'}</span>
+                            <span className="rank-role">{usuario.cargo || 'Cargo não especificado'}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="rank-performance">
+                          <div className="rank-score-wrapper">
+                            <span className="rank-score">{performance}%</span>
+                            <div className="rank-bar-mini">
+                              <div 
+                                className={`rank-fill-mini ${
+                                  performance >= 90 ? 'excellent' : 
+                                  performance >= 80 ? 'good' : 'regular'
+                                }`}
+                                style={{width: `${performance}%`}}
+                              ></div>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
               </div>
             </div>
           </div>
@@ -612,7 +816,7 @@ const Equipe = () => {
                     required
                   >
                     <option value="">Selecione um departamento</option>
-                    {teamData.departments.map(dept => (
+                    {['Desenvolvimento', 'RH', 'Vendas', 'Marketing', 'Operações', 'Financeiro'].map(dept => (
                       <option key={dept} value={dept}>{dept}</option>
                     ))}
                   </select>
@@ -666,13 +870,7 @@ const Equipe = () => {
                 </svg>
                 Cancelar
               </button>
-              <button className="btn-modal-primary" onClick={() => {
-                // Aqui você adicionaria a lógica para salvar o novo membro
-                console.log('Novo membro:', newMember);
-                alert('Membro adicionado com sucesso!');
-                setShowAddModal(false);
-                setNewMember({ name: '', email: '', role: '', department: '', phone: '', startDate: '' });
-              }}>
+              <button className="btn-modal-primary" onClick={handleAddMember}>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M5.6 10.4L2.2 7L0.8 8.4L5.6 13.2L16 2.8L14.6 1.4L5.6 10.4Z" fill="currentColor"/>
                 </svg>

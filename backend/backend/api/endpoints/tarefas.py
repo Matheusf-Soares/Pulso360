@@ -30,7 +30,6 @@ async def criar_tarefa(
     dados: TarefaCreate,
     db: AsyncSession = Depends(get_session),
     repo: TarefaRepository = Depends(),
-    usuario_id: UUID | None = None,
 ):
     tarefa = Tarefa(
         titulo=dados.titulo.strip(),
@@ -38,7 +37,7 @@ async def criar_tarefa(
         prioridade=dados.prioridade,
         categoria=dados.categoria,
         completed=dados.completed or False,
-        usuario_id=str(usuario_id) if usuario_id else None,
+        usuario_id=str(dados.usuario_id) if dados.usuario_id else None,
     )
     await repo.criar(tarefa)
     return tarefa

@@ -176,14 +176,83 @@ Clique em um documento abaixo para pular direto para ele:
 
 ---
 
+## 🚀 Documentos de Sprint (Novos!)
+
+### 11. **[SPRINT3_RELATORIO_FINAL.md](./SPRINT3_RELATORIO_FINAL.md)** ⭐ RECENTE
+- **Tempo de leitura**: 45 minutos
+- **Conteúdo**: Relatório completo do Sprint 3
+- **Para quem**: Todos (gerentes, desenvolvedores, stakeholders)
+- **Contém**:
+  - Visão executiva com métricas
+  - 4 tarefas completadas em detalhes
+  - Arquitetura de integração
+  - 5 serviços documentados
+  - Componentes UI criados
+  - Estilos CSS adicionados
+  - Testes e validação
+  - Lições aprendidas
+  - Próximos passos
+
+**👉 Leia se:**
+- Quer entender o Sprint 3 completamente
+- Precisa ver detalhes técnicos
+- Quer métricas e estatísticas
+- Está fazendo code review
+
+---
+
+### 12. **[SPRINT3_RESUMO_VISUAL.md](./SPRINT3_RESUMO_VISUAL.md)** ⭐ RÁPIDO
+- **Tempo de leitura**: 10 minutos
+- **Conteúdo**: Resumo visual do Sprint 3
+- **Para quem**: Todos que querem visão rápida
+- **Contém**:
+  - Gráficos e diagramas ASCII
+  - Mapa de integração visual
+  - Cards de tarefas
+  - Fluxo de dados ilustrado
+  - Estatísticas em tabelas
+  - Status visual por página
+
+**👉 Use se:**
+- Quer visão rápida do Sprint 3
+- Prefere diagramas a texto
+- Precisa apresentar para equipe
+- Quer entender fluxo de dados
+
+---
+
+### 13. **[INTEGRACAO_EQUIPE_COMPLETA.md](./INTEGRACAO_EQUIPE_COMPLETA.md)**
+- **Tempo de leitura**: 30 minutos
+- **Conteúdo**: Detalhamento da integração Equipe.js
+- **Para quem**: Desenvolvedores implementando similar
+- **Contém**:
+  - Task 1 do Sprint 3 detalhada
+  - Código completo antes/depois
+  - 350 linhas refatoradas
+  - Análise técnica profunda
+  - Handlers e estados explicados
+  - Padrões de integração
+
+**👉 Consulte se:**
+- Está implementando integração similar
+- Quer ver exemplo completo
+- Precisa entender o padrão usado
+
+---
+
 ## 📊 Mapa de Fluxo de Leitura
 
 ### Para Gerentes/Stakeholders:
 ```
 1. RESUMO_EXECUTIVO.md (10 min)
    ↓
-2. CHECKLIST_REFATORACAO.md (5 min para overview)
+2. SPRINT3_RESUMO_VISUAL.md (10 min) ← NOVO!
    ↓
+3. CHECKLIST_REFATORACAO.md (5 min para overview)
+   ↓
+4. Feito! Você sabe o status.
+```
+**Tempo total**: 25 minutos
 3. Feito! Você sabe o status.
 ```
 **Tempo total**: 15 minutos
@@ -194,15 +263,33 @@ Clique em um documento abaixo para pular direto para ele:
 ```
 1. RESUMO_EXECUTIVO.md (10 min)
    ↓
-2. PLANO_REFATORACAO.md (30 min)
+2. SPRINT3_RELATORIO_FINAL.md (45 min) ← NOVO!
    ↓
-3. ARCHITECTURE.md (40 min)
+3. PLANO_REFATORACAO.md (30 min)
    ↓
-4. STYLE_GUIDE.md (30 min)
+4. ARCHITECTURE.md (40 min)
    ↓
-5. Feito! Você pode liderar o projeto.
+5. STYLE_GUIDE.md (30 min)
+   ↓
+6. Feito! Você pode liderar o projeto.
 ```
-**Tempo total**: 2 horas
+**Tempo total**: 2h 35min
+
+---
+
+### Para Desenvolvedores (Implementar integrações):
+```
+1. SPRINT3_RESUMO_VISUAL.md (10 min) ← COMECE AQUI!
+   ↓
+2. INTEGRACAO_EQUIPE_COMPLETA.md (30 min) - Exemplo completo
+   ↓
+3. SPRINT3_RELATORIO_FINAL.md (45 min) - Detalhes técnicos
+   ↓
+4. STYLE_GUIDE.md (20 min) - Padrões
+   ↓
+5. Implemente sua integração!
+```
+**Tempo total**: 1h 45min
 
 ---
 

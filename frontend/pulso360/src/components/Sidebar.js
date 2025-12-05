@@ -6,7 +6,8 @@ export default function Sidebar() {
 
   const menuItems = [
     { path: "/", icon: "🏠", label: "Home" },
-    { path: "/avaliacoes", icon: "📋", label: "Minhas avaliações" },
+    { path: "/tarefas", icon: "📋", label: "Minhas Tarefas" },
+    { path: "/avaliacoes", icon: "📝", label: "Minhas avaliações" },
     { path: "/pdi", icon: "🎯", label: "Meu PDI" },
     { path: "/equipe", icon: "👥", label: "Minha equipe" },
     { path: "/relatorios", icon: "📊", label: "Relatórios" },

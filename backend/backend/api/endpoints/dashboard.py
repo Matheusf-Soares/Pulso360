@@ -5,10 +5,12 @@ from uuid import UUID
 from typing import List
 
 from fastapi import APIRouter, Depends
+from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
-from core.dependencies import get_session
+from core.dependencies import get_session, get_user_from_token, security
+from backend.models.usuario_model import Usuario
 from backend.models.avaliacao_model import Avaliacao
 from backend.models.tarefa_model import Tarefa
 from backend.models.meta_model import Meta
@@ -31,8 +33,12 @@ router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 async def summary(
     usuario_id: UUID | None = None,
     period: str | None = None,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_session),
 ):
+    # Valida autenticação usando a mesma sessão
+    current_user = await get_user_from_token(credentials.credentials, db)
+    
     # Avaliações concluídas vs total (para usuario como avaliado)
     evaluations_total_q = select(func.count(Avaliacao.id)).filter(
         Avaliacao.avaliado_id == str(usuario_id) if usuario_id else True
@@ -78,8 +84,12 @@ async def summary(
 async def pdi_progress(
     usuario_id: UUID | None = None,
     period: str | None = None,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_session),
 ):
+    # Valida autenticação
+    current_user = await get_user_from_token(credentials.credentials, db)
+    
     # Metas do usuário com progresso
     query = (
         select(Meta).filter(Meta.usuario_id == str(usuario_id))
@@ -110,8 +120,12 @@ async def pdi_progress(
 async def recent_activity(
     usuario_id: UUID | None = None,
     period: str | None = None,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_session),
 ):
+    # Valida autenticação
+    current_user = await get_user_from_token(credentials.credentials, db)
+    
     # Feedbacks recentes direcionados ao usuário
     query = (
         (
@@ -144,8 +158,12 @@ async def recent_activity(
 async def team_performance(
     usuario_id: UUID | None = None,
     period: str | None = None,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_session),
 ):
+    # Valida autenticação
+    current_user = await get_user_from_token(credentials.credentials, db)
+    
     # Desempenho simples: número de membros por equipe como base para percentual fictício
     equipes_rs = await db.execute(select(Equipe))
     equipes: List[Equipe] = equipes_rs.scalars().unique().all()

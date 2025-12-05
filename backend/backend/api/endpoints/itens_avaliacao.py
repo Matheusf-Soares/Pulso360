@@ -2,7 +2,9 @@
 
 from typing import List
 from fastapi import APIRouter, Depends, status
-from fastapi_pagination import Page, Params
+from fastapi.security import HTTPAuthorizationCredentials
+from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi_pagination import Page, Params, paginate
 
 from backend.schemas.item_avaliacao import (
     ItemAvaliacaoCreate,
@@ -11,6 +13,8 @@ from backend.schemas.item_avaliacao import (
 )
 from backend.services.item_avaliacao_service import ItemAvaliacaoService
 from backend.filters.item_avaliacao_filter import ItemAvaliacaoFilter
+from core.dependencies import get_session, get_user_from_token, security
+from backend.models.usuario_model import Usuario
 
 router = APIRouter(prefix="/itens-avaliacao", tags=["Itens de Avaliação"])
 
@@ -37,10 +41,16 @@ async def criar_item(
 async def listar_itens(
     filtros: ItemAvaliacaoFilter = Depends(),
     params: Params = Depends(),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    session: AsyncSession = Depends(get_session),
     service: ItemAvaliacaoService = Depends(ItemAvaliacaoService),
 ):
     """Lista itens de avaliação com filtros e paginação."""
-    return await service.filter(filtros.to_dict())
+    # Valida autenticação
+    current_user = await get_user_from_token(credentials.credentials, session)
+    
+    itens = await service.filter(filtros.model_dump(exclude_none=True))
+    return paginate(itens)
 
 
 @router.get(

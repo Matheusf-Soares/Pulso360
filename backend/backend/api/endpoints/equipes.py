@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, status
+from fastapi.security import HTTPAuthorizationCredentials
+from sqlalchemy.ext.asyncio import AsyncSession
 from backend.schemas.error import ErrorResponse
 from fastapi_pagination import Page, paginate
 
 from backend.services.equipe_service import EquipeService
 from backend.schemas.equipe import EquipeCreate, EquipeRead, EquipeUpdate
 from backend.filters.equipe_filter import EquipeFilter
+from core.dependencies import get_session, get_user_from_token, security
+from backend.models.usuario_model import Usuario
 
 router = APIRouter(prefix="/equipes", tags=["equipes"])
 
@@ -33,8 +37,14 @@ async def criar_equipe(
     description="Retorna lista paginada de equipes com filtros por nome e período.",
 )
 async def listar_equipes(
-    filtro: EquipeFilter = Depends(), service: EquipeService = Depends(EquipeService)
+    filtro: EquipeFilter = Depends(),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    session: AsyncSession = Depends(get_session),
+    service: EquipeService = Depends(EquipeService)
 ):
+    # Valida autenticação
+    current_user = await get_user_from_token(credentials.credentials, session)
+    
     equipes = await service.filter(filtro.model_dump(exclude_none=True))
     return paginate(equipes)
 

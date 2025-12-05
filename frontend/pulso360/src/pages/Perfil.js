@@ -1,6 +1,7 @@
 import React, { useState, useEffect, Fragment } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import ConfirmationModal from '../components/ConfirmationModal';
+import usuarioCompetenciaService from '../services/usuarioCompetenciaService';
 
 const Perfil = () => {
   const { user, updateUser } = useAuth();
@@ -20,6 +21,17 @@ const Perfil = () => {
     current: false,
     new: false,
     confirm: false
+  });
+
+  // Estados para competências
+  const [competencias, setCompetencias] = useState([]);
+  const [loadingCompetencias, setLoadingCompetencias] = useState(false);
+  const [showCompetenciaModal, setShowCompetenciaModal] = useState(false);
+  const [novaCompetencia, setNovaCompetencia] = useState({
+    competencia: '',
+    nivel_atual: 1,
+    nivel_desejado: 5,
+    status: 'em_desenvolvimento'
   });
 
   // Inicializar dados do usuário a partir do contexto
@@ -92,6 +104,27 @@ const Perfil = () => {
     setUserData(userData);
     setFormData(userData);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  // Carregar competências do usuário
+  useEffect(() => {
+    const loadCompetencias = async () => {
+      if (!user?.id) return;
+      
+      setLoadingCompetencias(true);
+      try {
+        const result = await usuarioCompetenciaService.getByUsuario(user.id);
+        setCompetencias(result.items || []);
+        console.log('✅ Competências carregadas:', result.items?.length || 0);
+      } catch (error) {
+        console.error('Erro ao carregar competências:', error);
+        setCompetencias([]);
+      } finally {
+        setLoadingCompetencias(false);
+      }
+    };
+
+    loadCompetencias();
   }, [user]);
 
   const [formData, setFormData] = useState({ ...userData });
@@ -235,9 +268,9 @@ const Perfil = () => {
       setModalConfig({
         title: "Erro ao Salvar",
         message: "Não foi possível salvar suas alterações. Verifique sua conexão e tente novamente.",
-        icon: "❌",
+        icon: "⚠️",
         type: "error",
-        confirmText: "Tentar Novamente"
+        confirmText: "OK"
       });
       setShowModal(true);
       
@@ -251,6 +284,94 @@ const Perfil = () => {
       }
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Handlers para competências
+  const handleCriarCompetencia = async () => {
+    if (!novaCompetencia.competencia.trim() || !user?.id) {
+      alert('Por favor, preencha o nome da competência');
+      return;
+    }
+
+    try {
+      setLoadingCompetencias(true);
+      const competenciaData = {
+        ...novaCompetencia,
+        usuario_id: user.id
+      };
+      
+      await usuarioCompetenciaService.create(competenciaData);
+      
+      // Recarregar competências
+      const result = await usuarioCompetenciaService.getByUsuario(user.id);
+      setCompetencias(result.items || []);
+      
+      // Resetar formulário e fechar modal
+      setNovaCompetencia({
+        competencia: '',
+        nivel_atual: 1,
+        nivel_desejado: 5,
+        status: 'em_desenvolvimento'
+      });
+      setShowCompetenciaModal(false);
+      
+      if (window.showNotification) {
+        window.showNotification('Competência adicionada com sucesso! ✅', 'success', 3000);
+      }
+    } catch (error) {
+      console.error('Erro ao criar competência:', error);
+      alert('Erro ao criar competência. Tente novamente.');
+    } finally {
+      setLoadingCompetencias(false);
+    }
+  };
+
+  const handleDeletarCompetencia = async (competenciaId) => {
+    if (!window.confirm('Deseja realmente remover esta competência?')) {
+      return;
+    }
+
+    try {
+      setLoadingCompetencias(true);
+      await usuarioCompetenciaService.delete(competenciaId);
+      
+      // Recarregar competências
+      if (user?.id) {
+        const result = await usuarioCompetenciaService.getByUsuario(user.id);
+        setCompetencias(result.items || []);
+      }
+      
+      if (window.showNotification) {
+        window.showNotification('Competência removida com sucesso! ✅', 'success', 3000);
+      }
+    } catch (error) {
+      console.error('Erro ao deletar competência:', error);
+      alert('Erro ao remover competência. Tente novamente.');
+    } finally {
+      setLoadingCompetencias(false);
+    }
+  };
+
+  const handleAtualizarCompetencia = async (competenciaId, updates) => {
+    try {
+      setLoadingCompetencias(true);
+      await usuarioCompetenciaService.update(competenciaId, updates);
+      
+      // Recarregar competências
+      if (user?.id) {
+        const result = await usuarioCompetenciaService.getByUsuario(user.id);
+        setCompetencias(result.items || []);
+      }
+      
+      if (window.showNotification) {
+        window.showNotification('Competência atualizada! ✅', 'success', 2000);
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar competência:', error);
+      alert('Erro ao atualizar competência. Tente novamente.');
+    } finally {
+      setLoadingCompetencias(false);
     }
   };
 
@@ -679,6 +800,7 @@ const Perfil = () => {
             { key: 'dados', label: '👤 Dados Pessoais', icon: '👤' },
             { key: 'contato', label: '📞 Contato', icon: '📞' },
             { key: 'trabalho', label: '💼 Trabalho', icon: '💼' },
+            { key: 'competencias', label: '🎯 Competências', icon: '🎯' },
             { key: 'configuracoes', label: '⚙️ Configurações', icon: '⚙️' },
             { key: 'seguranca', label: '🔒 Segurança', icon: '🔒' }
           ].map(tab => (
@@ -762,6 +884,111 @@ const Perfil = () => {
                   {renderFormField('Salário', 'salario', 'text', 'R$ 0.000,00', true)}
                 </div>
               </div>
+            </div>
+          )}
+
+          {activeTab === 'competencias' && (
+            <div className="tab-content">
+              <div className="content-header">
+                <h3>🎯 Minhas Competências</h3>
+                <p>Gerencie suas habilidades e plano de desenvolvimento</p>
+                <button 
+                  className="btn-add-competencia"
+                  onClick={() => setShowCompetenciaModal(true)}
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M8 0V16M0 8H16" stroke="currentColor" strokeWidth="2"/>
+                  </svg>
+                  Adicionar Competência
+                </button>
+              </div>
+
+              {loadingCompetencias ? (
+                <div className="loading-state">
+                  <div className="spinner"></div>
+                  <p>Carregando competências...</p>
+                </div>
+              ) : competencias.length > 0 ? (
+                <div className="competencias-grid">
+                  {competencias.map(comp => (
+                    <div key={comp.id} className="competencia-card">
+                      <div className="competencia-header">
+                        <div className="competencia-icon">
+                          {comp.status === 'alcancada' ? '✅' : 
+                           comp.status === 'em_desenvolvimento' ? '🔄' : '⏸️'}
+                        </div>
+                        <div className="competencia-info">
+                          <h4>{comp.competencia}</h4>
+                          <span className={`competencia-status status-${comp.status}`}>
+                            {comp.status === 'alcancada' ? 'Alcançada' : 
+                             comp.status === 'em_desenvolvimento' ? 'Em Desenvolvimento' : 'Não Iniciada'}
+                          </span>
+                        </div>
+                        <button 
+                          className="btn-delete-comp"
+                          onClick={() => handleDeletarCompetencia(comp.id)}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M2 4H14M6 4V2H10V4M3 4V14C3 14.5 3.5 15 4 15H12C12.5 15 13 14.5 13 14V4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                          </svg>
+                        </button>
+                      </div>
+
+                      <div className="competencia-levels">
+                        <div className="level-info">
+                          <span className="level-label">Nível Atual</span>
+                          <div className="level-bar">
+                            {[1, 2, 3, 4, 5].map(nivel => (
+                              <div 
+                                key={nivel}
+                                className={`level-dot ${nivel <= comp.nivel_atual ? 'active' : ''}`}
+                                onClick={() => handleAtualizarCompetencia(comp.id, { nivel_atual: nivel })}
+                              />
+                            ))}
+                          </div>
+                          <span className="level-value">{comp.nivel_atual}/5</span>
+                        </div>
+
+                        <div className="level-info">
+                          <span className="level-label">Nível Desejado</span>
+                          <div className="level-bar">
+                            {[1, 2, 3, 4, 5].map(nivel => (
+                              <div 
+                                key={nivel}
+                                className={`level-dot desejado ${nivel <= comp.nivel_desejado ? 'active' : ''}`}
+                              />
+                            ))}
+                          </div>
+                          <span className="level-value">{comp.nivel_desejado}/5</span>
+                        </div>
+                      </div>
+
+                      <div className="competencia-gap">
+                        <span className="gap-label">Gap de Desenvolvimento:</span>
+                        <span className="gap-value">
+                          {comp.nivel_desejado - comp.nivel_atual} 
+                          {comp.nivel_desejado - comp.nivel_atual === 1 ? ' nível' : ' níveis'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="empty-state">
+                  <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+                    <circle cx="32" cy="32" r="32" fill="#f5f6fa"/>
+                    <path d="M32 16C23.2 16 16 23.2 16 32C16 40.8 23.2 48 32 48C40.8 48 48 40.8 48 32C48 23.2 40.8 16 32 16ZM36 36H28V28H36V36Z" fill="#b2bec3"/>
+                  </svg>
+                  <h3>Nenhuma competência cadastrada</h3>
+                  <p>Comece adicionando suas habilidades e defina seus objetivos de desenvolvimento</p>
+                  <button 
+                    className="btn-primary"
+                    onClick={() => setShowCompetenciaModal(true)}
+                  >
+                    Adicionar Primeira Competência
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -1146,6 +1373,107 @@ const Perfil = () => {
                     Alterar Senha
                   </>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Criar Competência */}
+      {showCompetenciaModal && (
+        <div className="modal-overlay" onClick={() => setShowCompetenciaModal(false)}>
+          <div className="modal-content competencia-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>🎯 Adicionar Competência</h2>
+              <button 
+                className="modal-close"
+                onClick={() => setShowCompetenciaModal(false)}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="form-group">
+                <label>Nome da Competência *</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Ex: Liderança, JavaScript, Comunicação..."
+                  value={novaCompetencia.competencia}
+                  onChange={(e) => setNovaCompetencia({ ...novaCompetencia, competencia: e.target.value })}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Nível Atual (1-5)</label>
+                <div className="nivel-selector">
+                  {[1, 2, 3, 4, 5].map(nivel => (
+                    <button
+                      key={nivel}
+                      type="button"
+                      className={`nivel-btn ${novaCompetencia.nivel_atual === nivel ? 'active' : ''}`}
+                      onClick={() => setNovaCompetencia({ ...novaCompetencia, nivel_atual: nivel })}
+                    >
+                      {nivel}
+                    </button>
+                  ))}
+                </div>
+                <small>Avalie seu nível atual de proficiência</small>
+              </div>
+
+              <div className="form-group">
+                <label>Nível Desejado (1-5)</label>
+                <div className="nivel-selector">
+                  {[1, 2, 3, 4, 5].map(nivel => (
+                    <button
+                      key={nivel}
+                      type="button"
+                      className={`nivel-btn ${novaCompetencia.nivel_desejado === nivel ? 'active' : ''}`}
+                      onClick={() => setNovaCompetencia({ ...novaCompetencia, nivel_desejado: nivel })}
+                    >
+                      {nivel}
+                    </button>
+                  ))}
+                </div>
+                <small>Defina o nível que deseja alcançar</small>
+              </div>
+
+              <div className="form-group">
+                <label>Status</label>
+                <select
+                  className="form-control"
+                  value={novaCompetencia.status}
+                  onChange={(e) => setNovaCompetencia({ ...novaCompetencia, status: e.target.value })}
+                >
+                  <option value="em_desenvolvimento">Em Desenvolvimento</option>
+                  <option value="alcancada">Alcançada</option>
+                  <option value="nao_iniciada">Não Iniciada</option>
+                </select>
+              </div>
+
+              <div className="info-box">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <circle cx="10" cy="10" r="9" stroke="#3498db" strokeWidth="2"/>
+                  <path d="M10 6V10M10 14H10.01" stroke="#3498db" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                <p>Suas competências ajudam a identificar áreas de desenvolvimento e planejar seu crescimento profissional.</p>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button 
+                className="btn-secondary"
+                onClick={() => setShowCompetenciaModal(false)}
+              >
+                Cancelar
+              </button>
+              <button 
+                className="btn-primary"
+                onClick={handleCriarCompetencia}
+                disabled={!novaCompetencia.competencia.trim()}
+              >
+                Adicionar Competência
               </button>
             </div>
           </div>

@@ -15,7 +15,7 @@ class TarefaBase(BaseModel):
 
 
 class TarefaCreate(TarefaBase):
-    pass
+    usuario_id: Optional[UUID] = None
 
 
 class TarefaUpdate(BaseModel):

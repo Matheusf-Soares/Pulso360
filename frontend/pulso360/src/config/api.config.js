@@ -4,10 +4,10 @@
 
 const API_CONFIG = {
   // URL base do backend - altere conforme seu ambiente
-  // Em desenvolvimento, por padrão usamos caminho relativo ('') para permitir mocks via Service Worker.
+  // Sempre usar http://localhost:8000 em desenvolvimento
   BASE_URL: process.env.REACT_APP_API_URL !== undefined
     ? process.env.REACT_APP_API_URL
-    : (process.env.NODE_ENV === 'development' ? '' : 'http://localhost:8000'),
+    : 'http://localhost:8000',
   
   // Versão da API configurável via .env
   API_VERSION: process.env.REACT_APP_API_VERSION || '/api/v1',

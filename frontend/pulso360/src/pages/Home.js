@@ -718,9 +718,18 @@ export default function Home() {
           <div className="home-card">
             <div className="card-header">
               <h3>✅ Próximas Tarefas</h3>
-              <span className="task-count">
-                {tasks.filter(t => !t.completed).length} pendentes
-              </span>
+              <div style={{display:'flex', alignItems:'center', gap:'0.75rem'}}>
+                <span className="task-count">
+                  {tasks.filter(t => !t.completed).length} pendentes
+                </span>
+                <button 
+                  className="btn-link"
+                  onClick={() => navigate('/tarefas')}
+                  style={{fontSize:'0.875rem', padding:'0.25rem 0.5rem'}}
+                >
+                  Ver todas →
+                </button>
+              </div>
             </div>
             <div className="task-filters" style={{display:'flex', gap:8, marginBottom:12, alignItems:'center'}}>
               <PriorityDropdown

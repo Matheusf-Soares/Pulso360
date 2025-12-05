@@ -1,16 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import avaliacoesService from '../services/avaliacoesService';
 import itemAvaliacaoService from '../services/itemAvaliacaoService';
 import usuarioService from '../services/usuarioService';
+import feedbackService from '../services/feedbackService';
 
 const ResultadoAvaliacao = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('visao-geral');
   const [avaliacao, setAvaliacao] = useState(null);
   const [itensAvaliacao, setItensAvaliacao] = useState([]);
   const [competencias, setCompetencias] = useState([]);
+  const [feedbacks, setFeedbacks] = useState([]);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [novoFeedback, setNovoFeedback] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -20,21 +26,69 @@ const ResultadoAvaliacao = () => {
         setLoading(true);
         setError(null);
 
+        // Validação do ID
+        if (!id) {
+          setError('ID da avaliação não informado.');
+          setLoading(false);
+          return;
+        }
+
         // Busca avaliação
         const avaliacaoData = await avaliacoesService.getById(id);
+        if (!avaliacaoData) {
+          setError('Avaliação não encontrada.');
+          setLoading(false);
+          return;
+        }
         setAvaliacao(avaliacaoData);
 
         // Busca itens da avaliação
-        const itensData = await itemAvaliacaoService.listByAvaliacao(id);
-        setItensAvaliacao(itensData || []);
+        try {
+          const itensData = await itemAvaliacaoService.listByAvaliacao(id);
+          setItensAvaliacao(Array.isArray(itensData) ? itensData : []);
+        } catch (itemErr) {
+          console.error('Erro ao carregar itens:', itemErr);
+          setItensAvaliacao([]);
+        }
 
         // Busca competências do usuário avaliado
-        const competenciasData = await usuarioService.getCompetencias(avaliacaoData.avaliado_id);
-        setCompetencias(competenciasData || []);
+        if (avaliacaoData.avaliado_id) {
+          try {
+            const competenciasData = await usuarioService.getCompetencias(avaliacaoData.avaliado_id);
+            setCompetencias(Array.isArray(competenciasData) ? competenciasData : []);
+          } catch (compErr) {
+            console.error('Erro ao carregar competências:', compErr);
+            setCompetencias([]);
+          }
+        } else {
+          console.warn('avaliado_id não encontrado na avaliação');
+          setCompetencias([]);
+        }
+
+        // Busca feedbacks relacionados à avaliação
+        if (avaliacaoData.avaliado_id) {
+          try {
+            const feedbacksData = await feedbackService.list({
+              destinatario_id: avaliacaoData.avaliado_id,
+              page: 1,
+              size: 50
+            });
+            setFeedbacks(feedbacksData.items || []);
+          } catch (feedErr) {
+            console.error('Erro ao carregar feedbacks:', feedErr);
+            setFeedbacks([]);
+          }
+        }
 
       } catch (err) {
         console.error('Erro ao carregar dados:', err);
-        setError('Erro ao carregar resultado da avaliação.');
+        if (err.response?.status === 404) {
+          setError('Avaliação não encontrada.');
+        } else if (err.code === 'ERR_NETWORK') {
+          setError('Não foi possível conectar ao servidor. Verifique se o backend está rodando.');
+        } else {
+          setError('Erro ao carregar resultado da avaliação.');
+        }
       } finally {
         setLoading(false);
       }
@@ -43,10 +97,49 @@ const ResultadoAvaliacao = () => {
     loadData();
   }, [id]);
 
-  // Agrupa itens por categoria
+  // Handler para enviar novo feedback
+  const handleEnviarFeedback = async () => {
+    if (!novoFeedback.trim()) {
+      alert('Por favor, escreva um feedback antes de enviar.');
+      return;
+    }
+
+    if (!avaliacao?.avaliado_id) {
+      alert('Erro: Não foi possível identificar o destinatário do feedback.');
+      return;
+    }
+
+    try {
+      await feedbackService.create({
+        remetente_id: user.id,
+        destinatario_id: avaliacao.avaliado_id,
+        conteudo: novoFeedback.trim(),
+        tipo: 'avaliacao'
+      });
+
+      alert('Feedback enviado com sucesso!');
+      setNovoFeedback('');
+      setShowFeedbackModal(false);
+
+      // Recarregar feedbacks
+      const feedbacksData = await feedbackService.list({
+        destinatario_id: avaliacao.avaliado_id,
+        page: 1,
+        size: 50
+      });
+      setFeedbacks(feedbacksData.items || []);
+    } catch (err) {
+      console.error('Erro ao enviar feedback:', err);
+      alert('Erro ao enviar feedback. Tente novamente.');
+    }
+  };
+
+  // Agrupa itens por categoria com validações
   const sections = itensAvaliacao.reduce((acc, item) => {
-    const competencia = competencias.find(c => c.id === item.competencia_id);
-    if (!competencia) return acc;
+    if (!item || !item.competencia_id) return acc;
+    
+    const competencia = competencias.find(c => c && c.id === item.competencia_id);
+    if (!competencia || !competencia.nome) return acc;
 
     // Extrai categoria do nome da competência
     const categoria = competencia.nome.includes('-') 
@@ -57,12 +150,15 @@ const ResultadoAvaliacao = () => {
       acc[categoria] = {
         items: [],
         totalScore: 0,
-        count: 0
+        count: 0,
+        feedback: '',
+        strengths: [],
+        improvements: []
       };
     }
 
     acc[categoria].items.push({ ...item, competencia });
-    if (item.nota !== null) {
+    if (item.nota !== null && item.nota !== undefined && !isNaN(item.nota)) {
       acc[categoria].totalScore += parseFloat(item.nota);
       acc[categoria].count += 1;
     }
@@ -136,7 +232,7 @@ const ResultadoAvaliacao = () => {
     );
   }
 
-  const overallScore = avaliacao.nota_global || 0;
+  const overallScore = avaliacao?.nota_global || 0;
 
   return (
     <div className="result-evaluation-page">
@@ -160,9 +256,9 @@ const ResultadoAvaliacao = () => {
               <h1>Resultado da Avaliação</h1>
               <div className="result-meta">
                 <span className="meta-tag type">
-                  {avaliacao.tipo === 'autoavaliacao' ? 'Autoavaliação' : avaliacao.tipo}
+                  {avaliacao?.tipo === 'autoavaliacao' ? 'Autoavaliação' : (avaliacao?.tipo || 'N/A')}
                 </span>
-                {avaliacao.data_conclusao && (
+                {avaliacao?.data_conclusao && (
                   <span className="meta-tag date">
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                       <path d="M12 2H11V0H9V2H5V0H3V2H2C0.89 2 0 2.9 0 4V12C0 13.1 0.89 14 2 14H12C13.1 14 14 13.1 14 12V4C14 2.9 13.1 2 12 2ZM12 12H2V6H12V12Z" fill="currentColor"/>
@@ -171,7 +267,7 @@ const ResultadoAvaliacao = () => {
                   </span>
                 )}
                 <span className="meta-tag status">
-                  Status: {avaliacao.status}
+                  Status: {avaliacao?.status || 'N/A'}
                 </span>
               </div>
             </div>
@@ -253,6 +349,15 @@ const ResultadoAvaliacao = () => {
           </svg>
           Detalhes por Seção
         </button>
+        <button
+          className={`result-tab ${activeTab === 'feedbacks' ? 'active' : ''}`}
+          onClick={() => setActiveTab('feedbacks')}
+        >
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M18 0H2C0.9 0 0 0.9 0 2V14C0 15.1 0.9 16 2 16H16L20 20V2C20 0.9 19.1 0 18 0ZM16 12H4V10H16V12ZM16 9H4V7H16V9ZM16 6H4V4H16V6Z" fill="currentColor"/>
+          </svg>
+          Feedbacks ({feedbacks.length})
+        </button>
       </div>
 
       {/* Conteúdo das Tabs */}
@@ -262,24 +367,25 @@ const ResultadoAvaliacao = () => {
             {/* Scores por Seção */}
             <div className="sections-scores">
               <h2>Desempenho por Categoria</h2>
-              <div className="scores-grid">
-                {Object.keys(sections).map(categoryName => {
-                  const section = sections[categoryName];
-                  const score = parseFloat(section.averageScore);
-                  return (
-                    <div key={categoryName} className={`score-card ${getScoreColor(score)}`}>
-                      <div className="score-card-header">
-                        <span className="score-icon">{categoryIcons[categoryName] || '⭐'}</span>
-                        <span className="score-value">{score.toFixed(1)}</span>
-                      </div>
-                      <h3>{categoryName}</h3>
-                      <div className="score-bar-container">
-                        <div 
-                          className={`score-bar ${getScoreColor(score)}`}
-                          style={{width: `${(score / 5) * 100}%`}}
-                        ></div>
-                      </div>
-                      <span className={`score-label ${getScoreColor(score)}`}>
+              {Object.keys(sections).length > 0 ? (
+                <div className="scores-grid">
+                  {Object.keys(sections).map(categoryName => {
+                    const section = sections[categoryName];
+                    const score = parseFloat(section.averageScore);
+                    return (
+                      <div key={categoryName} className={`score-card ${getScoreColor(score)}`}>
+                        <div className="score-card-header">
+                          <span className="score-icon">{categoryIcons[categoryName] || '⭐'}</span>
+                          <span className="score-value">{score.toFixed(1)}</span>
+                        </div>
+                        <h3>{categoryName}</h3>
+                        <div className="score-bar-container">
+                          <div 
+                            className={`score-bar ${getScoreColor(score)}`}
+                            style={{width: `${(score / 5) * 100}%`}}
+                          ></div>
+                        </div>
+                        <span className={`score-label ${getScoreColor(score)}`}>
                         {getScoreLabel(score)}
                       </span>
                       <div className="score-details">
@@ -289,6 +395,11 @@ const ResultadoAvaliacao = () => {
                   );
                 })}
               </div>
+              ) : (
+                <div className="empty-state">
+                  <p>Nenhuma competência avaliada ainda.</p>
+                </div>
+              )}
             </div>
 
             {/* Resumo Estatístico */}
@@ -324,8 +435,9 @@ const ResultadoAvaliacao = () => {
         {activeTab === 'detalhes' && (
           <div className="tab-pane">
             <h2>Análise Detalhada por Categoria</h2>
-            <div className="sections-details">
-              {Object.keys(sections).map(categoryName => {
+            {Object.keys(sections).length > 0 ? (
+              <div className="sections-details">
+                {Object.keys(sections).map(categoryName => {
                 const section = sections[categoryName];
                 const score = parseFloat(section.averageScore);
                 
@@ -410,10 +522,143 @@ const ResultadoAvaliacao = () => {
                 );
               })}
             </div>
+            ) : (
+              <div className="empty-state">
+                <p>Nenhuma competência avaliada ainda.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Aba Feedbacks */}
+        {activeTab === 'feedbacks' && (
+          <div className="tab-pane feedbacks-tab">
+            <div className="feedbacks-header">
+              <h2>Feedbacks Relacionados</h2>
+              <button 
+                className="btn-add-feedback"
+                onClick={() => setShowFeedbackModal(true)}
+              >
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <path d="M9 0V18M0 9H18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                Enviar Feedback
+              </button>
+            </div>
+
+            {feedbacks.length > 0 ? (
+              <div className="feedbacks-list">
+                {feedbacks.map((feedback) => (
+                  <div key={feedback.id} className="feedback-card">
+                    <div className="feedback-header">
+                      <div className="feedback-author">
+                        <div className="author-avatar">
+                          {feedback.remetente?.nome?.charAt(0).toUpperCase() || '?'}
+                        </div>
+                        <div className="author-info">
+                          <span className="author-name">
+                            {feedback.remetente?.nome || 'Anônimo'}
+                          </span>
+                          <span className="feedback-date">
+                            {new Date(feedback.data_envio).toLocaleDateString('pt-BR', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
+                      </div>
+                      {feedback.tipo && (
+                        <span className={`feedback-type ${feedback.tipo}`}>
+                          {feedback.tipo}
+                        </span>
+                      )}
+                    </div>
+                    <div className="feedback-content">
+                      <p>{feedback.conteudo}</p>
+                    </div>
+                    {feedback.lido && (
+                      <div className="feedback-status">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                          <path d="M5.6 10.4L2.2 7L0.8 8.4L5.6 13.2L16 2.8L14.6 1.4L5.6 10.4Z" fill="#00b894"/>
+                          <path d="M13.6 10.4L10.2 7L8.8 8.4L13.6 13.2L24 2.8L22.6 1.4L13.6 10.4Z" fill="#00b894"/>
+                        </svg>
+                        Lido
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state-feedbacks">
+                <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+                  <circle cx="32" cy="32" r="32" fill="#f5f6fa"/>
+                  <path d="M48 16H16C13.8 16 12 17.8 12 20V40C12 42.2 13.8 44 16 44H44L52 52V20C52 17.8 50.2 16 48 16ZM40 32H24V28H40V32ZM40 26H24V22H40V26Z" fill="#b2bec3"/>
+                </svg>
+                <h3>Nenhum feedback ainda</h3>
+                <p>Seja o primeiro a enviar um feedback sobre esta avaliação</p>
+                <button 
+                  className="btn-add-feedback-empty"
+                  onClick={() => setShowFeedbackModal(true)}
+                >
+                  Enviar Feedback
+                </button>
+              </div>
+            )}
           </div>
         )}
 
       </div>
+
+      {/* Modal de Enviar Feedback */}
+      {showFeedbackModal && (
+        <div className="modal-overlay" onClick={() => setShowFeedbackModal(false)}>
+          <div className="modal-content feedback-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Enviar Feedback</h3>
+              <button className="modal-close" onClick={() => setShowFeedbackModal(false)}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z" fill="currentColor"/>
+                </svg>
+              </button>
+            </div>
+            <div className="modal-body">
+              <p className="feedback-instructions">
+                Compartilhe suas observações, reconhecimentos ou sugestões de melhoria sobre esta avaliação.
+              </p>
+              <textarea
+                className="feedback-textarea"
+                placeholder="Digite seu feedback aqui..."
+                value={novoFeedback}
+                onChange={(e) => setNovoFeedback(e.target.value)}
+                rows={6}
+              />
+            </div>
+            <div className="modal-footer">
+              <button 
+                className="btn-cancel"
+                onClick={() => {
+                  setShowFeedbackModal(false);
+                  setNovoFeedback('');
+                }}
+              >
+                Cancelar
+              </button>
+              <button 
+                className="btn-send"
+                onClick={handleEnviarFeedback}
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M0 16V0L16 8L0 16ZM2 11L11.2 8L2 5V7.5L8 8L2 8.5V11Z" fill="currentColor"/>
+                </svg>
+                Enviar Feedback
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -8,6 +8,10 @@ import sys
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_pagination import add_pagination
+from fastapi_pagination.utils import disable_installed_extensions_check
+
+# Desabilita o aviso sobre usar a extensão SQLAlchemy do fastapi_pagination
+disable_installed_extensions_check()
 
 # Ajuste de path para permitir imports diretos (api, models, repositories) devido à estrutura backend/backend
 CURRENT_DIR = os.path.dirname(__file__)

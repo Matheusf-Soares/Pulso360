@@ -5839,6 +5839,79 @@ input:disabled + .toggle-slider {
   padding: 0 4px;
 }
 
+/* Grid de estatísticas */
+.stat-grid-home {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+/* Cards de estatísticas */
+.stat-card-home {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border: 2px solid var(--border);
+  transition: all 0.3s ease;
+}
+
+.stat-card-home:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary);
+}
+
+.stat-card-home.success {
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+  border-color: #4caf50;
+}
+
+.stat-card-home.warning {
+  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+  border-color: #ff9800;
+}
+
+.stat-card-home.error {
+  background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+  border-color: #f44336;
+}
+
+.stat-card-home .stat-icon {
+  font-size: 32px;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.stat-card-home .stat-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-card-home .stat-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-card-home .stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+}
+
 /* Layout Principal */
 .home-main {
   display: grid;
@@ -7492,6 +7565,29 @@ input:disabled + .toggle-slider {
 .member-btn-modern.secondary:hover {
   background: #dfe6e9;
   border-color: #b2bec3;
+}
+
+.member-btn-modern.success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: 2px solid transparent;
+}
+
+.member-btn-modern.success:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.member-btn-modern.warning {
+  background: #fef3c7;
+  color: #92400e;
+  border: 2px solid #fbbf24;
+}
+
+.member-btn-modern.warning:hover {
+  background: #fde68a;
+  border-color: #f59e0b;
 }
 
 /* Empty State */

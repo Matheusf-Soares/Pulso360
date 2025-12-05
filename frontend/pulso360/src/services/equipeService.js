@@ -11,25 +11,34 @@ const equipeService = {
    * @param {Object} equipeData - Dados da equipe (nome, descricao, lider_id)
    * @returns {Promise}
    */
-  async criar(equipeData) {
+  async create(equipeData) {
     const response = await apiClient.post('/equipes', equipeData);
     return response.data;
   },
 
   /**
    * Listar equipes com paginação e filtros
-   * @param {Object} filtros - Filtros opcionais
+   * @param {Object} filtros - Filtros opcionais (lider_id, nome, etc)
    * @param {number} page - Número da página
    * @param {number} size - Tamanho da página
    * @returns {Promise}
    */
-  async listar(filtros = {}, page = 1, size = 50) {
-    const params = {
-      ...filtros,
-      page,
-      size,
-    };
-    const response = await apiClient.get('/equipes', { params });
+  async list(filtros = {}, page = 1, size = 50) {
+    const queryParams = new URLSearchParams();
+    
+    // Adicionar filtros
+    if (filtros.lider_id) queryParams.append('lider_id', filtros.lider_id);
+    if (filtros.nome) queryParams.append('nome', filtros.nome);
+    if (filtros.ativo !== undefined) queryParams.append('ativo', filtros.ativo);
+    
+    // Paginação
+    queryParams.append('page', page);
+    queryParams.append('size', size);
+
+    const query = queryParams.toString();
+    const url = query ? `/equipes?${query}` : '/equipes';
+    
+    const response = await apiClient.get(url);
     return response.data;
   },
 
@@ -38,7 +47,7 @@ const equipeService = {
    * @param {string} id - ID da equipe
    * @returns {Promise}
    */
-  async obterPorId(id) {
+  async getById(id) {
     const response = await apiClient.get(`/equipes/${id}`);
     return response.data;
   },
@@ -49,7 +58,7 @@ const equipeService = {
    * @param {Object} equipeData - Dados para atualizar
    * @returns {Promise}
    */
-  async atualizar(id, equipeData) {
+  async update(id, equipeData) {
     const response = await apiClient.put(`/equipes/${id}`, equipeData);
     return response.data;
   },
@@ -59,38 +68,8 @@ const equipeService = {
    * @param {string} id - ID da equipe
    * @returns {Promise}
    */
-  async remover(id) {
+  async delete(id) {
     await apiClient.delete(`/equipes/${id}`);
-  },
-
-  /**
-   * Adicionar membro à equipe
-   * @param {Object} membroData - Dados do membro (equipe_id, usuario_id, papel)
-   * @returns {Promise}
-   */
-  async adicionarMembro(membroData) {
-    const response = await apiClient.post('/membros_equipe', membroData);
-    return response.data;
-  },
-
-  /**
-   * Remover membro da equipe
-   * @param {string} equipeId - ID da equipe
-   * @param {string} usuarioId - ID do usuário
-   * @returns {Promise}
-   */
-  async removerMembro(equipeId, usuarioId) {
-    await apiClient.delete(`/membros_equipe/${equipeId}/${usuarioId}`);
-  },
-
-  /**
-   * Listar membros de uma equipe
-   * @param {Object} filtros - Filtros (equipe_id obrigatório)
-   * @returns {Promise}
-   */
-  async listarMembros(filtros = {}) {
-    const response = await apiClient.get('/membros_equipe', { params: filtros });
-    return response.data;
   },
 };
 

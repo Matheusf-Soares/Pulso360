@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, status
+from fastapi.security import HTTPAuthorizationCredentials
+from sqlalchemy.ext.asyncio import AsyncSession
 from backend.schemas.error import ErrorResponse
 from fastapi_pagination import Page, paginate
 
 from backend.services.papel_service import PapelService
 from backend.schemas.papel import PapelCreate, PapelRead, PapelUpdate
 from backend.filters.papel_filter import PapelFilter
+from core.dependencies import get_session, get_user_from_token, security
+from backend.models.usuario_model import Usuario
+from backend.repositories.papel_repository import PapelRepository
 
 router = APIRouter(prefix="/papeis", tags=["papeis"])
 
@@ -33,8 +38,17 @@ async def criar_papel(
     description="Retorna lista paginada de papéis com opção de filtro por nome.",
 )
 async def listar_papeis(
-    filtro: PapelFilter = Depends(), service: PapelService = Depends(PapelService)
+    filtro: PapelFilter = Depends(),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    session: AsyncSession = Depends(get_session),
 ):
+    # Valida autenticação usando a mesma sessão
+    current_user = await get_user_from_token(credentials.credentials, session)
+    
+    # Cria service com a mesma sessão
+    repo = PapelRepository(db=session)
+    service = PapelService(papel_repository=repo)
+    
     papeis = await service.filter(filtro.model_dump(exclude_none=True))
     return paginate(papeis)
 

@@ -1,6 +1,8 @@
 """Endpoints para gerenciamento de avaliações."""
 
 from fastapi import APIRouter, Depends, status
+from fastapi.security import HTTPAuthorizationCredentials
+from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.responses import StreamingResponse
 from typing import List
 import csv
@@ -9,6 +11,8 @@ import io
 from backend.schemas.avaliacao import AvaliacaoCreate, AvaliacaoUpdate, AvaliacaoRead
 from backend.services.avaliacao_service import AvaliacaoService
 from backend.filters.avaliacao_filter import AvaliacaoFilter
+from core.dependencies import get_session, get_user_from_token, security
+from backend.models.usuario_model import Usuario
 
 router = APIRouter(prefix="/avaliacoes", tags=["Avaliações"])
 
@@ -130,9 +134,14 @@ async def criar_avaliacao(
 )
 async def listar_avaliacoes(
     filtros: AvaliacaoFilter = Depends(),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    session: AsyncSession = Depends(get_session),
     service: AvaliacaoService = Depends(AvaliacaoService),
 ):
     """Lista avaliações com filtros."""
+    # Valida autenticação
+    current_user = await get_user_from_token(credentials.credentials, session)
+    
     return await service.filter(filtros.model_dump(exclude_none=True))
 
 

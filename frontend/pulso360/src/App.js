@@ -1,4 +1,5 @@
 import NovaTarefa from './pages/NovaTarefa';
+import Tarefas from './pages/Tarefas';
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -13,6 +14,7 @@ import Avaliacoes from "./pages/Avaliacoes";
 import ContinuarAvaliacao from "./pages/ContinuarAvaliacao";
 import ResultadoAvaliacao from "./pages/ResultadoAvaliacao";
 import PDI from "./pages/PDI";
+import Feedbacks from "./pages/Feedbacks";
 import Equipe from "./pages/Equipe";
 import MembroPerfil from "./pages/MembroPerfil";
 import Relatorios from "./pages/Relatorios";
@@ -51,7 +53,6 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/cadastro" element={<Cadastro />} />
           <Route path="/recuperar-senha" element={<RecuperarSenha />} />
-            <Route path="/tarefas/nova" element={<NovaTarefa />} />
           
           {/* Rotas protegidas - requerem autenticação */}
           <Route
@@ -61,10 +62,13 @@ export default function App() {
                 <Layout>
                   <Routes>
                     <Route path="/" element={<Home />} />
+                    <Route path="/tarefas" element={<Tarefas />} />
+                    <Route path="/tarefas/nova" element={<NovaTarefa />} />
                     <Route path="/avaliacoes" element={<Avaliacoes />} />
                     <Route path="/avaliacao/:id/continuar" element={<ContinuarAvaliacao />} />
                     <Route path="/avaliacao/:id/resultado" element={<ResultadoAvaliacao />} />
                     <Route path="/pdi" element={<PDI />} />
+                    <Route path="/feedbacks" element={<Feedbacks />} />
                     <Route path="/equipe" element={<Equipe />} />
                     <Route path="/membro/:id" element={<MembroPerfil />} />
                     <Route path="/relatorios" element={<Relatorios />} />

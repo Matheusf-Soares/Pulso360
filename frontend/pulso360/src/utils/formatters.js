@@ -165,7 +165,7 @@ export const formatRelativeTime = (date) => {
   return `há ${days}d`;
 };
 
-export default {
+const formatters = {
   formatDate,
   formatDateTime,
   formatCurrency,
@@ -178,3 +178,5 @@ export default {
   capitalize,
   toSlug
 };
+
+export default formatters;

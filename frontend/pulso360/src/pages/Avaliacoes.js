@@ -140,23 +140,22 @@ export default function Avaliacoes() {
   };
 
   return (
-    <div className="evaluations-page-modern">
+    <div className="home-container">
       {/* Header Profissional */}
-      <div className="evaluations-header-modern">
-        <div className="header-content-wrapper">
-          <div className="header-left-section">
-            <div className="header-icon-wrapper-eval">
+      <div className="home-header">
+        <div className="header-content">
+          <div className="welcome-section">
+            <div className="user-avatar-large">
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
-                <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="white"/>
-                <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" fill="none"/>
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="white"/>
               </svg>
             </div>
-            <div className="header-text-section">
+            <div className="welcome-text">
               <h1>Minhas Avaliações</h1>
-              <p>Gerencie suas avaliações de desempenho e acompanhe seu desenvolvimento profissional</p>
+              <p className="welcome-subtitle">Gerencie suas avaliações de desempenho e acompanhe seu desenvolvimento profissional</p>
             </div>
           </div>
-          <div className="header-right-section">
+          <div className="header-controls">
             <button className="btn-header-secondary" onClick={() => navigate('/avaliacoes/historico')}>
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                 <path d="M16 2H14V0H12V2H6V0H4V2H2C0.89 2 0 2.9 0 4V16C0 17.1 0.89 18 2 18H16C17.1 18 18 17.1 18 16V4C18 2.9 17.1 2 16 2ZM16 16H2V7H16V16Z" fill="currentColor"/>
@@ -175,7 +174,7 @@ export default function Avaliacoes() {
       </div>
 
       {/* Cards de Estatísticas */}
-      <div className="evaluations-stats-modern">
+      <div className="home-stats">
         <div className="eval-stat-card total">
           <div className="stat-icon-eval">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none">

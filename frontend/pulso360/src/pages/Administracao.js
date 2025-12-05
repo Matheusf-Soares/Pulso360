@@ -1,11 +1,85 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from '../contexts/AuthContext';
+import papelService from '../services/papelService';
+import usuarioPapelService from '../services/usuarioPapelService';
+import usuarioService from '../services/usuarioService';
 
 export default function Administracao() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState("usuarios");
+  const [papeis, setPapeis] = useState([]);
+  // eslint-disable-next-line no-unused-vars
+  const [usuarios, setUsuarios] = useState([]);
+  const [usuarioPapeis, setUsuarioPapeis] = useState([]);
+  const [showPapelModal, setShowPapelModal] = useState(false);
+  // eslint-disable-next-line no-unused-vars
+  const [showAtribuirModal, setShowAtribuirModal] = useState(false);
+  const [novoPapel, setNovoPapel] = useState({ nome: '', descricao: '' });
+  const [loading, setLoading] = useState(false);
+
+  // Carregar dados ao montar o componente
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      
+      // Carregar papéis
+      const papeisData = await papelService.list();
+      setPapeis(papeisData.items || []);
+      
+      // Carregar usuários
+      const usuariosData = await usuarioService.list({ page: 1, size: 100 });
+      setUsuarios(usuariosData.items || []);
+      
+      // Carregar atribuições de papéis
+      const usuarioPapeisData = await usuarioPapelService.list({ page: 1, size: 500 });
+      setUsuarioPapeis(usuarioPapeisData.items || []);
+    } catch (err) {
+      console.error('Erro ao carregar dados:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handler para criar novo papel
+  const handleCriarPapel = async () => {
+    if (!novoPapel.nome.trim()) {
+      alert('Por favor, informe o nome do papel.');
+      return;
+    }
+
+    try {
+      await papelService.create(novoPapel);
+      alert('Papel criado com sucesso!');
+      setShowPapelModal(false);
+      setNovoPapel({ nome: '', descricao: '' });
+      await loadData();
+    } catch (err) {
+      console.error('Erro ao criar papel:', err);
+      alert('Erro ao criar papel. Tente novamente.');
+    }
+  };
+
+  // Handler para deletar papel
+  const handleDeletarPapel = async (papelId) => {
+    if (!window.confirm('Deseja realmente excluir este papel?')) {
+      return;
+    }
+
+    try {
+      await papelService.delete(papelId);
+      alert('Papel excluído com sucesso!');
+      await loadData();
+    } catch (err) {
+      console.error('Erro ao deletar papel:', err);
+      alert('Erro ao excluir papel. Pode haver usuários vinculados.');
+    }
+  };
   
   // Informações do administrador logado
   const adminUser = user ? {
@@ -32,6 +106,7 @@ export default function Administracao() {
 
   const sections = [
     { id: "usuarios", label: "Usuários", icon: "👥" },
+    { id: "papeis", label: "Papéis e Permissões", icon: "🔑" },
     { id: "sistema", label: "Sistema", icon: "⚙️" },
     { id: "seguranca", label: "Segurança", icon: "🔐" },
     { id: "relatorios", label: "Relatórios", icon: "📊" }
@@ -101,6 +176,98 @@ export default function Administracao() {
                 </button>
               </div>
             </div>
+          </div>
+        );
+      
+      case "papeis":
+        return (
+          <div className="admin-content">
+            <div className="roles-header">
+              <h2>Gestão de Papéis e Permissões</h2>
+              <button 
+                className="btn-primary"
+                onClick={() => setShowPapelModal(true)}
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M8 0V16M0 8H16" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+                Novo Papel
+              </button>
+            </div>
+
+            {loading ? (
+              <div className="loading-state">
+                <div className="spinner"></div>
+                <p>Carregando papéis...</p>
+              </div>
+            ) : papeis.length > 0 ? (
+              <div className="roles-grid">
+                {papeis.map(papel => {
+                  const usuariosComPapel = usuarioPapeis.filter(up => up.papel_id === papel.id);
+                  return (
+                    <div key={papel.id} className="role-card">
+                      <div className="role-header">
+                        <div className="role-icon">🔑</div>
+                        <div className="role-info">
+                          <h3>{papel.nome}</h3>
+                          <p>{papel.descricao || 'Sem descrição'}</p>
+                        </div>
+                      </div>
+                      <div className="role-stats">
+                        <div className="stat-item">
+                          <span className="stat-label">Usuários:</span>
+                          <span className="stat-value">{usuariosComPapel.length}</span>
+                        </div>
+                        <div className="stat-item">
+                          <span className="stat-label">Criado:</span>
+                          <span className="stat-value">
+                            {new Date(papel.criado_em).toLocaleDateString('pt-BR')}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="role-actions">
+                        <button 
+                          className="btn-view"
+                          onClick={() => {
+                            // Navegar para detalhes do papel
+                            alert(`Ver detalhes de: ${papel.nome}`);
+                          }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M8 3C4.5 3 1.5 5.5 0 8C1.5 10.5 4.5 13 8 13C11.5 13 14.5 10.5 16 8C14.5 5.5 11.5 3 8 3ZM8 11C6.3 11 5 9.7 5 8C5 6.3 6.3 5 8 5C9.7 5 11 6.3 11 8C11 9.7 9.7 11 8 11ZM8 6.5C7.2 6.5 6.5 7.2 6.5 8C6.5 8.8 7.2 9.5 8 9.5C8.8 9.5 9.5 8.8 9.5 8C9.5 7.2 8.8 6.5 8 6.5Z" fill="currentColor"/>
+                          </svg>
+                          Ver
+                        </button>
+                        <button 
+                          className="btn-delete"
+                          onClick={() => handleDeletarPapel(papel.id)}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M2 4H14M6 4V2H10V4M3 4V14C3 14.5 3.5 15 4 15H12C12.5 15 13 14.5 13 14V4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                          </svg>
+                          Excluir
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="empty-state">
+                <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+                  <circle cx="32" cy="32" r="32" fill="#f5f6fa"/>
+                  <path d="M32 16C23.2 16 16 23.2 16 32C16 40.8 23.2 48 32 48C40.8 48 48 40.8 48 32C48 23.2 40.8 16 32 16ZM36 36H28V28H36V36Z" fill="#b2bec3"/>
+                </svg>
+                <h3>Nenhum papel cadastrado</h3>
+                <p>Crie o primeiro papel para começar a gerenciar permissões</p>
+                <button 
+                  className="btn-primary"
+                  onClick={() => setShowPapelModal(true)}
+                >
+                  Criar Primeiro Papel
+                </button>
+              </div>
+            )}
           </div>
         );
       
@@ -380,6 +547,71 @@ export default function Administracao() {
           </div>
         </div>
       </div>
+
+      {/* Modal Criar Papel */}
+      {showPapelModal && (
+        <div className="modal-overlay" onClick={() => setShowPapelModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Criar Novo Papel</h2>
+              <button 
+                className="modal-close"
+                onClick={() => setShowPapelModal(false)}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="form-group">
+                <label>Nome do Papel *</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Ex: Gerente de RH, Analista, etc."
+                  value={novoPapel.nome}
+                  onChange={(e) => setNovoPapel({ ...novoPapel, nome: e.target.value })}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Descrição</label>
+                <textarea
+                  className="form-control"
+                  rows="4"
+                  placeholder="Descreva as responsabilidades e permissões deste papel..."
+                  value={novoPapel.descricao}
+                  onChange={(e) => setNovoPapel({ ...novoPapel, descricao: e.target.value })}
+                />
+              </div>
+
+              <div className="info-box">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <circle cx="10" cy="10" r="9" stroke="#3498db" strokeWidth="2"/>
+                  <path d="M10 6V10M10 14H10.01" stroke="#3498db" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                <p>Após criar o papel, você poderá atribuí-lo aos usuários na seção de usuários.</p>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button 
+                className="btn-secondary"
+                onClick={() => setShowPapelModal(false)}
+              >
+                Cancelar
+              </button>
+              <button 
+                className="btn-primary"
+                onClick={handleCriarPapel}
+                disabled={!novoPapel.nome.trim()}
+              >
+                Criar Papel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
