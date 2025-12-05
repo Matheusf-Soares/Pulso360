@@ -3,12 +3,12 @@ from __future__ import annotations
 from typing import Dict, Any, List
 from fastapi import Depends
 
-from services.base.base_service import BaseService
-from repositories.meta_repository import MetaRepository
-from repositories.pdi_repository import PDIRepository
-from repositories.usuario_repository import UsuarioRepository
-from repositories.ciclo_avaliacao_repository import CicloAvaliacaoRepository
-from models.meta_model import Meta
+from backend.services.base.base_service import BaseService
+from backend.repositories.meta_repository import MetaRepository
+from backend.repositories.pdi_repository import PDIRepository
+from backend.repositories.usuario_repository import UsuarioRepository
+from backend.repositories.ciclo_avaliacao_repository import CicloAvaliacaoRepository
+from backend.models.meta_model import Meta
 from core.errors import not_found, bad_request
 
 

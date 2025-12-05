@@ -4,10 +4,12 @@ from typing import List, Dict, Any, Optional
 
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+from sqlalchemy import select
 
-from repositories.base.base_repository import BaseRepository
+from backend.repositories.base.base_repository import BaseRepository
 from core.dependencies import get_session
-from models.avaliacao_model import Avaliacao
+from backend.models.avaliacao_model import Avaliacao
 
 
 class AvaliacaoRepository(BaseRepository):
@@ -19,10 +21,41 @@ class AvaliacaoRepository(BaseRepository):
         return avaliacao
 
     async def obter_por_id(self, avaliacao_id: str) -> Optional[Avaliacao]:
-        return await self.get(model_type=Avaliacao, id=avaliacao_id)
+        stmt = (
+            select(Avaliacao)
+            .where(Avaliacao.id == avaliacao_id)
+            .options(
+                selectinload(Avaliacao.avaliador),
+                selectinload(Avaliacao.avaliado),
+                selectinload(Avaliacao.ciclo),
+                selectinload(Avaliacao.itens),
+            )
+        )
+        result = await self.db.execute(stmt)
+        return result.scalar_one_or_none()
 
     async def filtrar(self, filtro: Dict[str, Any]) -> List[Avaliacao]:
-        return await self.filter(filter_data=filtro, model_type=Avaliacao)
+        stmt = select(Avaliacao).options(
+            selectinload(Avaliacao.avaliador),
+            selectinload(Avaliacao.avaliado),
+            selectinload(Avaliacao.ciclo),
+            selectinload(Avaliacao.itens),
+        )
+
+        # Aplicar filtros básicos
+        if "avaliado_id" in filtro:
+            stmt = stmt.where(Avaliacao.avaliado_id == filtro["avaliado_id"])
+        if "avaliador_id" in filtro:
+            stmt = stmt.where(Avaliacao.avaliador_id == filtro["avaliador_id"])
+        if "ciclo_id" in filtro:
+            stmt = stmt.where(Avaliacao.ciclo_id == filtro["ciclo_id"])
+        if "status" in filtro:
+            stmt = stmt.where(Avaliacao.status == filtro["status"])
+        if "tipo" in filtro:
+            stmt = stmt.where(Avaliacao.tipo == filtro["tipo"])
+
+        result = await self.db.execute(stmt)
+        return list(result.scalars().all())
 
     async def editar(self, avaliacao: Avaliacao) -> Avaliacao:
         await self.edit(avaliacao)

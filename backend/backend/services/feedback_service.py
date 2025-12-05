@@ -3,11 +3,11 @@ from __future__ import annotations
 from typing import Dict, Any, List
 from fastapi import Depends
 
-from services.base.base_service import BaseService
-from repositories.feedback_repository import FeedbackRepository
-from repositories.avaliacao_repository import AvaliacaoRepository
-from repositories.usuario_repository import UsuarioRepository
-from models.feedback_model import Feedback
+from backend.services.base.base_service import BaseService
+from backend.repositories.feedback_repository import FeedbackRepository
+from backend.repositories.avaliacao_repository import AvaliacaoRepository
+from backend.repositories.usuario_repository import UsuarioRepository
+from backend.models.feedback_model import Feedback
 from core.errors import not_found, bad_request
 
 

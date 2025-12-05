@@ -5,9 +5,9 @@ from datetime import date
 
 from fastapi import Depends
 
-from services.base.base_service import BaseService
-from repositories.ciclo_avaliacao_repository import CicloAvaliacaoRepository
-from models.ciclo_avaliacao_model import CicloAvaliacao
+from backend.services.base.base_service import BaseService
+from backend.repositories.ciclo_avaliacao_repository import CicloAvaliacaoRepository
+from backend.models.ciclo_avaliacao_model import CicloAvaliacao
 from core.errors import bad_request, not_found
 
 

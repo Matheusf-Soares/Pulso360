@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import Optional
-from filters.base.base_filter import BaseFilter
+from backend.filters.base.base_filter import BaseFilter
 
 
 class CicloAvaliacaoFilter(BaseFilter):

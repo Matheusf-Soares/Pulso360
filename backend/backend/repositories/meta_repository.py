@@ -5,9 +5,9 @@ from typing import List, Dict, Any, Optional
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from repositories.base.base_repository import BaseRepository
+from backend.repositories.base.base_repository import BaseRepository
 from core.dependencies import get_session
-from models.meta_model import Meta
+from backend.models.meta_model import Meta
 
 
 class MetaRepository(BaseRepository):

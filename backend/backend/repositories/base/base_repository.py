@@ -9,7 +9,7 @@ from sqlalchemy import Select, func
 from sqlalchemy.sql.type_api import TypeEngine
 from sqlalchemy import String
 
-from models.base.base_entity_model import BaseEntityModel
+from backend.models.base.base_entity_model import BaseEntityModel
 
 
 class BaseRepository(ABC):

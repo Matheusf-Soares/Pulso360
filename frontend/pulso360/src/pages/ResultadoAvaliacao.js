@@ -1,81 +1,142 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import avaliacoesService from '../services/avaliacoesService';
+import itemAvaliacaoService from '../services/itemAvaliacaoService';
+import usuarioService from '../services/usuarioService';
 
 const ResultadoAvaliacao = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('visao-geral');
+  const [avaliacao, setAvaliacao] = useState(null);
+  const [itensAvaliacao, setItensAvaliacao] = useState([]);
+  const [competencias, setCompetencias] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Dados do resultado (em produção virá do backend)
-  const resultData = {
-    id: id,
-    title: 'Avaliação de Liderança',
-    type: 'Gestor',
-    completedDate: '15 Nov 2025',
-    evaluator: 'Carlos Oliveira',
-    overallScore: 8.5,
-    sections: [
-      {
-        id: 1,
-        title: 'Competências Técnicas',
-        score: 9.0,
-        icon: '💻',
-        feedback: 'Excelente domínio técnico. Demonstra conhecimento profundo das tecnologias e ferramentas necessárias.',
-        strengths: ['Conhecimento em React', 'Boas práticas de código', 'Arquitetura de software'],
-        improvements: ['Aprofundar em testes automatizados']
-      },
-      {
-        id: 2,
-        title: 'Trabalho em Equipe',
-        score: 8.5,
-        icon: '👥',
-        feedback: 'Ótima colaboração com o time. Sempre disposto a ajudar e compartilhar conhecimento.',
-        strengths: ['Comunicação clara', 'Mentoria de júniores', 'Participação ativa'],
-        improvements: ['Liderar mais iniciativas de equipe']
-      },
-      {
-        id: 3,
-        title: 'Comunicação',
-        score: 8.0,
-        icon: '💬',
-        feedback: 'Comunicação efetiva tanto escrita quanto verbal. Apresentações claras e objetivas.',
-        strengths: ['Documentação de código', 'Apresentações técnicas'],
-        improvements: ['Melhorar comunicação com stakeholders não-técnicos']
-      },
-      {
-        id: 4,
-        title: 'Gestão de Tempo',
-        score: 8.5,
-        icon: '⏰',
-        feedback: 'Excelente gerenciamento de prazos e prioridades. Consegue equilibrar múltiplas demandas.',
-        strengths: ['Cumprimento de prazos', 'Priorização eficaz'],
-        improvements: ['Delegar mais tarefas quando apropriado']
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Busca avaliação
+        const avaliacaoData = await avaliacoesService.getById(id);
+        setAvaliacao(avaliacaoData);
+
+        // Busca itens da avaliação
+        const itensData = await itemAvaliacaoService.listByAvaliacao(id);
+        setItensAvaliacao(itensData || []);
+
+        // Busca competências do usuário avaliado
+        const competenciasData = await usuarioService.getCompetencias(avaliacaoData.avaliado_id);
+        setCompetencias(competenciasData || []);
+
+      } catch (err) {
+        console.error('Erro ao carregar dados:', err);
+        setError('Erro ao carregar resultado da avaliação.');
+      } finally {
+        setLoading(false);
       }
-    ],
-    generalFeedback: 'Profissional exemplar com excelente desempenho em todas as áreas avaliadas. Demonstra maturidade técnica e interpessoal. Recomendo para posições de liderança técnica.',
-    actionPlan: [
-      'Participar de curso avançado de testes automatizados',
-      'Liderar projeto de arquitetura do próximo trimestre',
-      'Apresentar tech talk sobre boas práticas de React',
-      'Mentoria formal de 2 desenvolvedores júnior'
-    ],
-    nextSteps: 'Revisar este feedback com seu gestor em reunião 1:1 e definir metas específicas para o próximo ciclo de avaliação.'
-  };
+    };
+
+    loadData();
+  }, [id]);
+
+  // Agrupa itens por categoria
+  const sections = itensAvaliacao.reduce((acc, item) => {
+    const competencia = competencias.find(c => c.id === item.competencia_id);
+    if (!competencia) return acc;
+
+    // Extrai categoria do nome da competência
+    const categoria = competencia.nome.includes('-') 
+      ? competencia.nome.split('-')[0].trim() 
+      : 'Geral';
+
+    if (!acc[categoria]) {
+      acc[categoria] = {
+        items: [],
+        totalScore: 0,
+        count: 0
+      };
+    }
+
+    acc[categoria].items.push({ ...item, competencia });
+    if (item.nota !== null) {
+      acc[categoria].totalScore += parseFloat(item.nota);
+      acc[categoria].count += 1;
+    }
+
+    return acc;
+  }, {});
+
+  // Calcula score médio por seção
+  Object.keys(sections).forEach(key => {
+    const section = sections[key];
+    section.averageScore = section.count > 0 
+      ? (section.totalScore / section.count).toFixed(1) 
+      : 0;
+  });
 
   const getScoreColor = (score) => {
-    if (score >= 9) return 'excellent';
-    if (score >= 8) return 'good';
-    if (score >= 7) return 'average';
+    if (score >= 4.5) return 'excellent';
+    if (score >= 4) return 'good';
+    if (score >= 3) return 'average';
     return 'needs-improvement';
   };
 
   const getScoreLabel = (score) => {
-    if (score >= 9) return 'Excelente';
-    if (score >= 8) return 'Muito Bom';
-    if (score >= 7) return 'Bom';
-    if (score >= 6) return 'Satisfatório';
+    if (score >= 4.5) return 'Excelente';
+    if (score >= 4) return 'Muito Bom';
+    if (score >= 3) return 'Bom';
+    if (score >= 2) return 'Satisfatório';
     return 'Precisa Melhorar';
   };
+
+  const categoryIcons = {
+    'Técnica': '💻',
+    'Técnicas': '💻',
+    'Comunicação': '💬',
+    'Liderança': '👑',
+    'Trabalho em Equipe': '👥',
+    'Gestão': '⏰',
+    'Geral': '⭐'
+  };
+
+  if (loading) {
+    return (
+      <div className="result-evaluation-page">
+        <div className="loading-state">
+          <div className="spinner"></div>
+          <p>Carregando resultado...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="result-evaluation-page">
+        <div className="error-state">
+          <p>{error}</p>
+          <button onClick={() => navigate('/avaliacoes')}>Voltar</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!avaliacao) {
+    return (
+      <div className="result-evaluation-page">
+        <div className="error-state">
+          <p>Avaliação não encontrada.</p>
+          <button onClick={() => navigate('/avaliacoes')}>Voltar</button>
+        </div>
+      </div>
+    );
+  }
+
+  const overallScore = avaliacao.nota_global || 0;
 
   return (
     <div className="result-evaluation-page">
@@ -96,20 +157,21 @@ const ResultadoAvaliacao = () => {
               </svg>
             </div>
             <div className="result-header-info">
-              <h1>{resultData.title}</h1>
+              <h1>Resultado da Avaliação</h1>
               <div className="result-meta">
-                <span className="meta-tag type">{resultData.type}</span>
-                <span className="meta-tag date">
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path d="M12 2H11V0H9V2H5V0H3V2H2C0.89 2 0 2.9 0 4V12C0 13.1 0.89 14 2 14H12C13.1 14 14 13.1 14 12V4C14 2.9 13.1 2 12 2ZM12 12H2V6H12V12Z" fill="currentColor"/>
-                  </svg>
-                  {resultData.completedDate}
+                <span className="meta-tag type">
+                  {avaliacao.tipo === 'autoavaliacao' ? 'Autoavaliação' : avaliacao.tipo}
                 </span>
-                <span className="meta-tag evaluator">
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path d="M7 7C8.66 7 10 5.66 10 4C10 2.34 8.66 1 7 1C5.34 1 4 2.34 4 4C4 5.66 5.34 7 7 7ZM7 8.5C4.67 8.5 0 9.67 0 12V13.5H14V12C14 9.67 9.33 8.5 7 8.5Z" fill="currentColor"/>
-                  </svg>
-                  {resultData.evaluator}
+                {avaliacao.data_conclusao && (
+                  <span className="meta-tag date">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <path d="M12 2H11V0H9V2H5V0H3V2H2C0.89 2 0 2.9 0 4V12C0 13.1 0.89 14 2 14H12C13.1 14 14 13.1 14 12V4C14 2.9 13.1 2 12 2ZM12 12H2V6H12V12Z" fill="currentColor"/>
+                    </svg>
+                    {new Date(avaliacao.data_conclusao).toLocaleDateString('pt-BR')}
+                  </span>
+                )}
+                <span className="meta-tag status">
+                  Status: {avaliacao.status}
                 </span>
               </div>
             </div>
@@ -127,7 +189,7 @@ const ResultadoAvaliacao = () => {
                     fill="none" 
                     stroke="url(#scoreGradient)" 
                     strokeWidth="12"
-                    strokeDasharray={`${(resultData.overallScore / 10) * 314} 314`}
+                    strokeDasharray={`${(overallScore / 5) * 314} 314`}
                     strokeLinecap="round"
                     transform="rotate(-90 60 60)"
                   />
@@ -139,14 +201,14 @@ const ResultadoAvaliacao = () => {
                   </defs>
                 </svg>
                 <div className="score-content">
-                  <span className="score-number">{resultData.overallScore}</span>
-                  <span className="score-label">de 10</span>
+                  <span className="score-number">{overallScore.toFixed(1)}</span>
+                  <span className="score-label">de 5</span>
                 </div>
               </div>
               <div className="score-info">
                 <span className="score-title">Nota Geral</span>
-                <span className={`score-status ${getScoreColor(resultData.overallScore)}`}>
-                  {getScoreLabel(resultData.overallScore)}
+                <span className={`score-status ${getScoreColor(overallScore)}`}>
+                  {getScoreLabel(overallScore)}
                 </span>
               </div>
             </div>
@@ -191,15 +253,6 @@ const ResultadoAvaliacao = () => {
           </svg>
           Detalhes por Seção
         </button>
-        <button
-          className={`result-tab ${activeTab === 'plano' ? 'active' : ''}`}
-          onClick={() => setActiveTab('plano')}
-        >
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path d="M16 2L6 12L2 8L0.5 9.5L6 15L17.5 3.5L16 2Z" fill="currentColor"/>
-          </svg>
-          Plano de Ação
-        </button>
       </div>
 
       {/* Conteúdo das Tabs */}
@@ -208,154 +261,158 @@ const ResultadoAvaliacao = () => {
           <div className="tab-pane">
             {/* Scores por Seção */}
             <div className="sections-scores">
-              <h2>Desempenho por Competência</h2>
+              <h2>Desempenho por Categoria</h2>
               <div className="scores-grid">
-                {resultData.sections.map(section => (
-                  <div key={section.id} className={`score-card ${getScoreColor(section.score)}`}>
-                    <div className="score-card-header">
-                      <span className="score-icon">{section.icon}</span>
-                      <span className="score-value">{section.score}</span>
+                {Object.keys(sections).map(categoryName => {
+                  const section = sections[categoryName];
+                  const score = parseFloat(section.averageScore);
+                  return (
+                    <div key={categoryName} className={`score-card ${getScoreColor(score)}`}>
+                      <div className="score-card-header">
+                        <span className="score-icon">{categoryIcons[categoryName] || '⭐'}</span>
+                        <span className="score-value">{score.toFixed(1)}</span>
+                      </div>
+                      <h3>{categoryName}</h3>
+                      <div className="score-bar-container">
+                        <div 
+                          className={`score-bar ${getScoreColor(score)}`}
+                          style={{width: `${(score / 5) * 100}%`}}
+                        ></div>
+                      </div>
+                      <span className={`score-label ${getScoreColor(score)}`}>
+                        {getScoreLabel(score)}
+                      </span>
+                      <div className="score-details">
+                        <span>{section.count} competências avaliadas</span>
+                      </div>
                     </div>
-                    <h3>{section.title}</h3>
-                    <div className="score-bar-container">
-                      <div 
-                        className={`score-bar ${getScoreColor(section.score)}`}
-                        style={{width: `${(section.score / 10) * 100}%`}}
-                      ></div>
-                    </div>
-                    <span className={`score-label ${getScoreColor(section.score)}`}>
-                      {getScoreLabel(section.score)}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
-            {/* Feedback Geral */}
+            {/* Resumo Estatístico */}
             <div className="general-feedback-card">
               <h2>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2ZM20 16H6L4 18V4H20V16Z" fill="currentColor"/>
+                  <path d="M3 13H5V21H3V13ZM7 9H9V21H7V9ZM11 5H13V21H11V5ZM15 9H17V21H15V9ZM19 13H21V21H19V13Z" fill="currentColor"/>
                 </svg>
-                Feedback Geral do Avaliador
+                Resumo Estatístico
               </h2>
-              <p className="feedback-text">{resultData.generalFeedback}</p>
+              <div className="stats-grid">
+                <div className="stat-item">
+                  <span className="stat-label">Total de Competências</span>
+                  <span className="stat-value">{itensAvaliacao.length}</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Competências Avaliadas</span>
+                  <span className="stat-value">{itensAvaliacao.filter(i => i.nota !== null).length}</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Nota Média</span>
+                  <span className="stat-value">{overallScore.toFixed(2)}</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Categorias</span>
+                  <span className="stat-value">{Object.keys(sections).length}</span>
+                </div>
+              </div>
             </div>
           </div>
         )}
 
         {activeTab === 'detalhes' && (
           <div className="tab-pane">
-            <h2>Análise Detalhada por Seção</h2>
+            <h2>Análise Detalhada por Categoria</h2>
             <div className="sections-details">
-              {resultData.sections.map(section => (
-                <div key={section.id} className="section-detail-card">
-                  <div className="section-detail-header">
-                    <div className="section-title-group">
-                      <span className="section-icon-detail">{section.icon}</span>
-                      <div>
-                        <h3>{section.title}</h3>
-                        <span className={`section-score ${getScoreColor(section.score)}`}>
-                          {section.score}/10 - {getScoreLabel(section.score)}
-                        </span>
+              {Object.keys(sections).map(categoryName => {
+                const section = sections[categoryName];
+                const score = parseFloat(section.averageScore);
+                
+                return (
+                  <div key={categoryName} className="section-detail-wrapper">
+                    <div className="section-detail-card">
+                      <div className="section-detail-header">
+                        <div className="section-title-group">
+                          <span className="section-detail-icon">{categoryIcons[categoryName] || '⭐'}</span>
+                          <div>
+                            <h3>{categoryName}</h3>
+                            <span className="section-subtitle">{section.count} competências</span>
+                          </div>
+                        </div>
+                        <div className="section-score-badge">
+                          <span className="badge-score">{score.toFixed(1)}</span>
+                          <span className="badge-label">/5</span>
+                        </div>
+                      </div>
+                      <div className="section-score-circle">
+                        <svg viewBox="0 0 80 80" className="mini-circle">
+                          <circle cx="40" cy="40" r="35" fill="none" stroke="#e2e8f0" strokeWidth="8"/>
+                          <circle 
+                            cx="40" 
+                            cy="40" 
+                            r="35" 
+                            fill="none" 
+                            stroke={`var(--${getScoreColor(score)}-color)`}
+                            strokeWidth="8"
+                            strokeDasharray={`${(score / 5) * 220} 220`}
+                            strokeLinecap="round"
+                            transform="rotate(-90 40 40)"
+                          />
+                        </svg>
+                        <span className="mini-score">{score.toFixed(1)}</span>
                       </div>
                     </div>
-                    <div className="section-score-circle">
-                      <svg viewBox="0 0 80 80" className="mini-circle">
-                        <circle cx="40" cy="40" r="35" fill="none" stroke="#e2e8f0" strokeWidth="8"/>
-                        <circle 
-                          cx="40" 
-                          cy="40" 
-                          r="35" 
-                          fill="none" 
-                          stroke={`var(--${getScoreColor(section.score)}-color)`}
-                          strokeWidth="8"
-                          strokeDasharray={`${(section.score / 10) * 220} 220`}
-                          strokeLinecap="round"
-                          transform="rotate(-90 40 40)"
-                        />
-                      </svg>
-                      <span className="mini-score">{section.score}</span>
-                    </div>
-                  </div>
 
-                  <div className="section-feedback">
-                    <h4>Feedback</h4>
-                    <p>{section.feedback}</p>
-                  </div>
-
-                  <div className="section-lists">
-                    <div className="strengths-list">
-                      <h4>
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                          <path d="M6 11L2 7L3.4 5.6L6 8.2L12.6 1.6L14 3L6 11Z" fill="#00b894"/>
-                        </svg>
-                        Pontos Fortes
-                      </h4>
-                      <ul>
-                        {section.strengths.map((strength, index) => (
-                          <li key={index}>{strength}</li>
-                        ))}
-                      </ul>
+                    <div className="section-feedback">
+                      <h4>Feedback</h4>
+                      <p>{section.feedback || 'Nenhum feedback disponível para esta categoria.'}</p>
                     </div>
 
-                    <div className="improvements-list">
-                      <h4>
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                          <path d="M8 0L10 6L16 8L10 10L8 16L6 10L0 8L6 6L8 0Z" fill="#fdcb6e"/>
-                        </svg>
-                        Oportunidades de Melhoria
-                      </h4>
-                      <ul>
-                        {section.improvements.map((improvement, index) => (
-                          <li key={index}>{improvement}</li>
-                        ))}
-                      </ul>
+                    <div className="section-lists">
+                      <div className="strengths-list">
+                        <h4>
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M6 11L2 7L3.4 5.6L6 8.2L12.6 1.6L14 3L6 11Z" fill="#00b894"/>
+                          </svg>
+                          Pontos Fortes
+                        </h4>
+                        <ul>
+                          {section.strengths && section.strengths.length > 0 ? (
+                            section.strengths.map((strength, index) => (
+                              <li key={index}>{strength}</li>
+                            ))
+                          ) : (
+                            <li>Nenhum ponto forte identificado.</li>
+                          )}
+                        </ul>
+                      </div>
+
+                      <div className="improvements-list">
+                        <h4>
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M8 0L10 6L16 8L10 10L8 16L6 10L0 8L6 6L8 0Z" fill="#fdcb6e"/>
+                          </svg>
+                          Oportunidades de Melhoria
+                        </h4>
+                        <ul>
+                          {section.improvements && section.improvements.length > 0 ? (
+                            section.improvements.map((improvement, index) => (
+                              <li key={index}>{improvement}</li>
+                            ))
+                          ) : (
+                            <li>Nenhuma oportunidade de melhoria identificada.</li>
+                          )}
+                        </ul>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
 
-        {activeTab === 'plano' && (
-          <div className="tab-pane">
-            <div className="action-plan-section">
-              <h2>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M14 2L6 10L2 6L0.5 7.5L6 13L15.5 3.5L14 2Z" fill="currentColor"/>
-                </svg>
-                Plano de Desenvolvimento
-              </h2>
-              <p className="plan-intro">Ações recomendadas para o seu desenvolvimento profissional:</p>
-
-              <div className="action-items">
-                {resultData.actionPlan.map((action, index) => (
-                  <div key={index} className="action-item">
-                    <div className="action-number">{index + 1}</div>
-                    <div className="action-content">
-                      <p>{action}</p>
-                      <div className="action-meta">
-                        <span className="action-tag">Recomendado</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="next-steps-card">
-                <h3>
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                    <path d="M10 0L12.5 7.5L20 10L12.5 12.5L10 20L7.5 12.5L0 10L7.5 7.5L10 0Z" fill="currentColor"/>
-                  </svg>
-                  Próximos Passos
-                </h3>
-                <p>{resultData.nextSteps}</p>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

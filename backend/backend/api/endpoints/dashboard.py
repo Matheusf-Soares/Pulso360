@@ -9,12 +9,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
 from core.dependencies import get_session
-from models.avaliacao_model import Avaliacao
-from models.tarefa_model import Tarefa
-from models.meta_model import Meta
-from models.feedback_model import Feedback
-from models.equipe_model import Equipe, MembroEquipe
-from schemas.dashboard import (
+from backend.models.avaliacao_model import Avaliacao
+from backend.models.tarefa_model import Tarefa
+from backend.models.meta_model import Meta
+from backend.models.feedback_model import Feedback
+from backend.models.equipe_model import Equipe, MembroEquipe
+from backend.schemas.dashboard import (
     DashboardSummary,
     DashboardPDIResponse,
     PDIProgressItem,

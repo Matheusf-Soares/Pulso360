@@ -4,10 +4,10 @@ from typing import Dict, Any, List
 
 from fastapi import Depends
 
-from services.base.base_service import BaseService
-from repositories.usuario_competencia_repository import UsuarioCompetenciaRepository
-from repositories.usuario_repository import UsuarioRepository
-from models.usuario_competencia_model import UsuarioCompetencia
+from backend.services.base.base_service import BaseService
+from backend.repositories.usuario_competencia_repository import UsuarioCompetenciaRepository
+from backend.repositories.usuario_repository import UsuarioRepository
+from backend.models.usuario_competencia_model import UsuarioCompetencia
 from core.errors import not_found
 
 

@@ -6,9 +6,9 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from repositories.base.base_repository import BaseRepository
+from backend.repositories.base.base_repository import BaseRepository
 from core.dependencies import get_session
-from models.equipe_model import MembroEquipe
+from backend.models.equipe_model import MembroEquipe
 
 
 class MembroEquipeRepository(BaseRepository):

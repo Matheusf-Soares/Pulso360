@@ -5,7 +5,7 @@ from datetime import datetime
 
 from pydantic import EmailStr
 
-from filters.base.base_filter import BaseFilter
+from backend.filters.base.base_filter import BaseFilter
 
 
 class UsuarioFilter(BaseFilter):

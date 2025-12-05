@@ -2,8 +2,8 @@ from __future__ import annotations
 from typing import Optional, List
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from models.tarefa_model import Tarefa
-from repositories.tarefa_repository import TarefaRepository
+from backend.models.tarefa_model import Tarefa
+from backend.repositories.tarefa_repository import TarefaRepository
 from core.dependencies import get_session
 
 

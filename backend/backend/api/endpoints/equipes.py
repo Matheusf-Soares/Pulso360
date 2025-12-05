@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, status
-from schemas.error import ErrorResponse
+from backend.schemas.error import ErrorResponse
 from fastapi_pagination import Page, paginate
 
-from services.equipe_service import EquipeService
-from schemas.equipe import EquipeCreate, EquipeRead, EquipeUpdate
-from filters.equipe_filter import EquipeFilter
+from backend.services.equipe_service import EquipeService
+from backend.schemas.equipe import EquipeCreate, EquipeRead, EquipeUpdate
+from backend.filters.equipe_filter import EquipeFilter
 
 router = APIRouter(prefix="/equipes", tags=["equipes"])
 

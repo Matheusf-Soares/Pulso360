@@ -6,12 +6,12 @@ from datetime import datetime
 
 from fastapi import Depends
 
-from services.base.base_service import BaseService
-from repositories.avaliacao_repository import AvaliacaoRepository
-from repositories.usuario_repository import UsuarioRepository
-from repositories.ciclo_avaliacao_repository import CicloAvaliacaoRepository
-from repositories.item_avaliacao_repository import ItemAvaliacaoRepository
-from models.avaliacao_model import Avaliacao
+from backend.services.base.base_service import BaseService
+from backend.repositories.avaliacao_repository import AvaliacaoRepository
+from backend.repositories.usuario_repository import UsuarioRepository
+from backend.repositories.ciclo_avaliacao_repository import CicloAvaliacaoRepository
+from backend.repositories.item_avaliacao_repository import ItemAvaliacaoRepository
+from backend.models.avaliacao_model import Avaliacao
 from core.errors import not_found, bad_request
 
 
@@ -51,7 +51,26 @@ class AvaliacaoService(BaseService):
         return avaliacao
 
     async def filter(self, filtro: Dict[str, Any]) -> List[Avaliacao]:
-        return await self.avaliacao_repository.filtrar(filtro)
+        avaliacoes = await self.avaliacao_repository.filtrar(filtro)
+
+        # Calcular progresso para cada avaliação
+        for avaliacao in avaliacoes:
+            if hasattr(avaliacao, "itens") and avaliacao.itens:
+                total_itens = len(avaliacao.itens)
+                itens_respondidos = sum(
+                    1 for item in avaliacao.itens if item.nota is not None
+                )
+                avaliacao.progresso = round(
+                    (itens_respondidos / total_itens * 100) if total_itens > 0 else 0, 2
+                )
+                avaliacao.total_itens = total_itens
+                avaliacao.itens_respondidos = itens_respondidos
+            else:
+                avaliacao.progresso = 0
+                avaliacao.total_itens = 0
+                avaliacao.itens_respondidos = 0
+
+        return avaliacoes
 
     async def edit(self, avaliacao_id: str, data: Dict[str, Any]) -> Avaliacao:
         avaliacao = await self.get_by_id(avaliacao_id)
@@ -69,14 +88,23 @@ class AvaliacaoService(BaseService):
         if avaliacao.status == "concluida":
             bad_request("Avaliação já concluída")
         # calcula nota_global se houver itens com nota
-        itens = await self.item_repository.filtrar({"avaliacao_id": avaliacao_id})
-        notas = [i.nota for i in itens if i.nota is not None]
-        if notas:
-            avaliacao.nota_global = float(round(mean(notas), 2))
+        await self.calcular_nota_global(avaliacao_id)
         avaliacao.status = "concluida"
         avaliacao.data_conclusao = datetime.utcnow()
         await self.avaliacao_repository.editar(avaliacao)
         return avaliacao
+
+    async def calcular_nota_global(self, avaliacao_id: str) -> float:
+        """Calcula a nota global da avaliação baseada nos itens."""
+        itens = await self.item_repository.filtrar({"avaliacao_id": avaliacao_id})
+        notas = [float(i.nota) for i in itens if i.nota is not None]
+        if notas:
+            nota_global = round(mean(notas), 2)
+            avaliacao = await self.get_by_id(avaliacao_id)
+            avaliacao.nota_global = nota_global
+            await self.avaliacao_repository.editar(avaliacao)
+            return nota_global
+        return 0.0
 
     async def remove(self, avaliacao_id: str) -> None:
         avaliacao = await self.get_by_id(avaliacao_id)

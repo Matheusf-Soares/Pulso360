@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, status
-from schemas.error import ErrorResponse
+from backend.schemas.error import ErrorResponse
 from fastapi_pagination import Page, paginate
 
-from services.usuario_papel_service import UsuarioPapelService
-from schemas.usuario_papel import UsuarioPapelCreate, UsuarioPapelRead
-from filters.usuario_papel_filter import UsuarioPapelFilter
+from backend.services.usuario_papel_service import UsuarioPapelService
+from backend.schemas.usuario_papel import UsuarioPapelCreate, UsuarioPapelRead
+from backend.filters.usuario_papel_filter import UsuarioPapelFilter
 
 router = APIRouter(prefix="/usuario-papeis", tags=["usuario-papeis"])
 

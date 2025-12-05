@@ -39,6 +39,98 @@ const equipes = [
     { id: 2, nome: 'Equipe B', membros: [] }
 ]
 
+const ciclosAvaliacao = [
+    {
+        id: 'c1',
+        nome: 'Ciclo 2024 Q4',
+        periodo_inicio: '2024-10-01',
+        periodo_fim: '2024-12-31',
+        status: 'ativo'
+    },
+    {
+        id: 'c2',
+        nome: 'Ciclo 2025 Q1',
+        periodo_inicio: '2025-01-01',
+        periodo_fim: '2025-03-31',
+        status: 'planejado'
+    }
+]
+
+const avaliacoes = [
+    {
+        id: 'a1',
+        avaliado_id: 1,
+        avaliador_id: 2,
+        ciclo_id: 'c1',
+        tipo: 'gestor',
+        status: 'em_andamento',
+        nota_global: null,
+        comentarios_gerais: null,
+        data_criacao: '2024-11-01T10:00:00Z',
+        data_conclusao: null,
+        progresso: 60,
+        total_itens: 10,
+        itens_respondidos: 6,
+        avaliador: usuarios[1],
+        avaliado: usuarios[0],
+        ciclo: ciclosAvaliacao[0]
+    },
+    {
+        id: 'a2',
+        avaliado_id: 1,
+        avaliador_id: 1,
+        ciclo_id: 'c1',
+        tipo: 'autoavaliacao',
+        status: 'concluida',
+        nota_global: 8.5,
+        comentarios_gerais: 'Ótimo desempenho no trimestre',
+        data_criacao: '2024-10-15T10:00:00Z',
+        data_conclusao: '2024-11-20T15:30:00Z',
+        progresso: 100,
+        total_itens: 8,
+        itens_respondidos: 8,
+        avaliador: usuarios[0],
+        avaliado: usuarios[0],
+        ciclo: ciclosAvaliacao[0]
+    },
+    {
+        id: 'a3',
+        avaliado_id: 2,
+        avaliador_id: 1,
+        ciclo_id: 'c1',
+        tipo: '360',
+        status: 'rascunho',
+        nota_global: null,
+        comentarios_gerais: null,
+        data_criacao: '2024-11-25T10:00:00Z',
+        data_conclusao: null,
+        progresso: 0,
+        total_itens: 15,
+        itens_respondidos: 0,
+        avaliador: usuarios[0],
+        avaliado: usuarios[1],
+        ciclo: ciclosAvaliacao[0]
+    },
+    {
+        id: 'a4',
+        avaliado_id: 1,
+        avaliador_id: 2,
+        ciclo_id: 'c2',
+        tipo: 'gestor',
+        status: 'aguardando',
+        nota_global: null,
+        comentarios_gerais: null,
+        data_criacao: '2024-12-01T10:00:00Z',
+        data_conclusao: null,
+        progresso: 0,
+        total_itens: 10,
+        itens_respondidos: 0,
+        avaliador: usuarios[1],
+        avaliado: usuarios[0],
+        ciclo: ciclosAvaliacao[1]
+    }
+]
+
 export const handlers = [
     // Usuarios list
     http.get(`${API_BASE}/usuarios`, (req, res, ctx) => {
@@ -107,6 +199,42 @@ export const handlers = [
 
         console.log('❌ MSW: Credenciais inválidas')
         return res(ctx.status(401), ctx.json({ detail: 'Credenciais inválidas' }))
+    }),
+
+    // Avaliações - Lista
+    http.get(`${API_BASE}/avaliacoes`, (req, res, ctx) => {
+        console.log('📥 MSW: Requisição recebida para /avaliacoes')
+        return res(ctx.status(200), ctx.json(avaliacoes))
+    }),
+
+    // Avaliações - Stats
+    http.get(`${API_BASE}/avaliacoes/stats`, (req, res, ctx) => {
+        console.log('📥 MSW: Requisição recebida para /avaliacoes/stats')
+        const total = avaliacoes.length
+        const pending = avaliacoes.filter(a => ['em_andamento', 'rascunho', 'aguardando'].includes(a.status)).length
+        const completed = avaliacoes.filter(a => a.status === 'concluida').length
+        const scores = avaliacoes.filter(a => a.nota_global).map(a => a.nota_global)
+        const avgScore = scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2) : 0
+        
+        return res(ctx.status(200), ctx.json({
+            total,
+            pending,
+            completed,
+            avgScore: parseFloat(avgScore)
+        }))
+    }),
+
+    // Avaliações - Export
+    http.get(`${API_BASE}/avaliacoes/export`, (req, res, ctx) => {
+        console.log('📥 MSW: Requisição recebida para /avaliacoes/export')
+        const csv = 'ID,Avaliado,Avaliador,Ciclo,Tipo,Status,Nota,Data\n' +
+            avaliacoes.map(a => `${a.id},${a.avaliado.nome},${a.avaliador.nome},${a.ciclo.nome},${a.tipo},${a.status},${a.nota_global || ''},${a.data_criacao}`).join('\n')
+        return res(
+            ctx.status(200),
+            ctx.set('Content-Type', 'text/csv'),
+            ctx.set('Content-Disposition', 'attachment; filename=avaliacoes.csv'),
+            ctx.body(csv)
+        )
     }),
 
     // Fallback: responder 404 para rotas não mapeadas

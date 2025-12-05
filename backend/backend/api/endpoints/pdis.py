@@ -4,9 +4,9 @@ from typing import List
 from fastapi import APIRouter, Depends, status
 from fastapi_pagination import Page, Params
 
-from schemas.pdi import PDICreate, PDIUpdate, PDIRead
-from services.pdi_service import PDIService
-from filters.pdi_filter import PDIFilter
+from backend.schemas.pdi import PDICreate, PDIUpdate, PDIRead
+from backend.services.pdi_service import PDIService
+from backend.filters.pdi_filter import PDIFilter
 
 router = APIRouter(prefix="/pdis", tags=["PDI"])
 

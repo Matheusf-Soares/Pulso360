@@ -6,9 +6,9 @@ from datetime import datetime, timezone
 
 from core.dependencies import get_session
 from core.security import check_password, generate_hash_password
-from schemas.auth import LoginRequest, TokenResponse, UserLoginInfo
-from repositories.usuario_repository import UsuarioRepository
-from models.usuario_model import Usuario
+from backend.schemas.auth import LoginRequest, TokenResponse, UserLoginInfo
+from backend.repositories.usuario_repository import UsuarioRepository
+from backend.models.usuario_model import Usuario
 from core.configs import settings
 
 from jose import jwt

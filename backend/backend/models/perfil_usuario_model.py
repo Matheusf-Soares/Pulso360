@@ -7,11 +7,11 @@ from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.configs import settings
-from models.base.base_entity_model import BaseEntityModel
+from backend.models.base.base_entity_model import BaseEntityModel
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from models.usuario_model import Usuario
+    from backend.models.usuario_model import Usuario
 
 
 class PerfilUsuario(settings.DBBaseModel, BaseEntityModel):
@@ -21,7 +21,9 @@ class PerfilUsuario(settings.DBBaseModel, BaseEntityModel):
 
     __tablename__ = "perfil_usuario"
 
-    usuario_id: Mapped[str] = mapped_column(UUID(as_uuid=True), ForeignKey("usuario.id"), primary_key=True)
+    usuario_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("usuario.id"), primary_key=True
+    )
     bio: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     telefone: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
     linkedin_url: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
