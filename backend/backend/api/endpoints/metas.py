@@ -4,9 +4,9 @@ from typing import List
 from fastapi import APIRouter, Depends, status
 from fastapi_pagination import Page, Params
 
-from schemas.meta import MetaCreate, MetaUpdate, MetaRead
-from services.meta_service import MetaService
-from filters.meta_filter import MetaFilter
+from backend.schemas.meta import MetaCreate, MetaUpdate, MetaRead
+from backend.services.meta_service import MetaService
+from backend.filters.meta_filter import MetaFilter
 
 router = APIRouter(prefix="/metas", tags=["Metas"])
 

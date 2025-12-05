@@ -9,8 +9,8 @@ from sqlalchemy.orm import sessionmaker
 
 from core.configs import settings
 from core.security import generate_hash_password
-from models.usuario_model import Usuario
-from models.base.base_model import Base
+from backend.models.usuario_model import Usuario
+from backend.models.base.base_model import Base
 
 
 async def criar_usuario_teste():

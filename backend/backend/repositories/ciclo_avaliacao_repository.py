@@ -5,8 +5,8 @@ from typing import List, Dict, Any, Optional
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from repositories.base.base_repository import BaseRepository
-from models.ciclo_avaliacao_model import CicloAvaliacao
+from backend.repositories.base.base_repository import BaseRepository
+from backend.models.ciclo_avaliacao_model import CicloAvaliacao
 from core.dependencies import get_session
 
 

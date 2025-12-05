@@ -3,10 +3,10 @@ from __future__ import annotations
 from typing import Dict, Any, List
 from fastapi import Depends
 
-from services.base.base_service import BaseService
-from repositories.acao_meta_repository import AcaoMetaRepository
-from repositories.meta_repository import MetaRepository
-from models.acao_meta_model import AcaoMeta
+from backend.services.base.base_service import BaseService
+from backend.repositories.acao_meta_repository import AcaoMetaRepository
+from backend.repositories.meta_repository import MetaRepository
+from backend.models.acao_meta_model import AcaoMeta
 from core.errors import not_found, bad_request
 
 

@@ -4,9 +4,9 @@ from typing import List
 from uuid import UUID
 
 from core.dependencies import get_session
-from models.tarefa_model import Tarefa
-from repositories.tarefa_repository import TarefaRepository
-from schemas.tarefa import (
+from backend.models.tarefa_model import Tarefa
+from backend.repositories.tarefa_repository import TarefaRepository
+from backend.schemas.tarefa import (
     TarefaCreate,
     TarefaUpdate,
     TarefaResponse,

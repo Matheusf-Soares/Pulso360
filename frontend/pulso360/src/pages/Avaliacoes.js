@@ -2,6 +2,67 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
 import avaliacoesService from '../services/avaliacoesService';
 
+// Função para mapear dados do backend para o formato do frontend
+const mapAvaliacaoToFrontend = (avaliacao) => {
+  // Mapear tipo
+  const tipoMap = {
+    'autoavaliacao': 'Autoavaliação',
+    'gestor': 'Gestor',
+    '360': '360°'
+  };
+  
+  // Mapear status
+  const statusMap = {
+    'rascunho': 'Aguardando',
+    'em_andamento': 'Em andamento',
+    'concluida': 'Concluída',
+    'aguardando': 'Aguardando'
+  };
+  
+  // Calcular prazo formatado
+  const formatDeadline = (ciclo) => {
+    if (!ciclo || !ciclo.periodo_fim) return 'Sem prazo';
+    const date = new Date(ciclo.periodo_fim);
+    return date.toLocaleDateString('pt-BR');
+  };
+  
+  // Montar título da avaliação
+  const buildTitle = (avaliacao) => {
+    if (avaliacao.ciclo) {
+      return `${avaliacao.ciclo.nome} - ${tipoMap[avaliacao.tipo] || avaliacao.tipo}`;
+    }
+    return `Avaliação ${tipoMap[avaliacao.tipo] || avaliacao.tipo}`;
+  };
+  
+  return {
+    id: avaliacao.id,
+    title: buildTitle(avaliacao),
+    type: tipoMap[avaliacao.tipo] || avaliacao.tipo,
+    status: statusMap[avaliacao.status] || avaliacao.status,
+    deadline: formatDeadline(avaliacao.ciclo),
+    evaluator: avaliacao.avaliador?.nome || 'Não definido',
+    progress: avaliacao.progresso || 0,
+    nota_global: avaliacao.nota_global,
+    data_criacao: avaliacao.data_criacao,
+    ciclo: avaliacao.ciclo,
+    avaliador: avaliacao.avaliador,
+    avaliado: avaliacao.avaliado
+  };
+};
+
+// Mapeamento reverso: Frontend -> Backend
+const statusToBackend = {
+  'Em andamento': 'em_andamento',
+  'Aguardando': 'rascunho',
+  'Concluída': 'concluida'
+};
+
+const typeToBackend = {
+  'Autoavaliação': 'autoavaliacao',
+  '360°': '360',
+  'Gestor': 'gestor'
+};
+
 export default function Avaliacoes() {
   const navigate = useNavigate();
 
@@ -16,14 +77,35 @@ export default function Avaliacoes() {
       setLoading(true);
       setError("");
       try {
+        // Preparar parâmetros para o backend (converter valores para formato do backend)
+        const params = {};
+        if (filters.status !== "Todas") {
+          params.status = statusToBackend[filters.status] || filters.status;
+        }
+        if (filters.type !== "Todas") {
+          params.tipo = typeToBackend[filters.type] || filters.type;
+        }
+        
+        console.log("🔍 Buscando avaliações com filtros:", params);
+        console.log("📝 Filtros originais (frontend):", filters);
+        
         const [evals, stat] = await Promise.all([
-          avaliacoesService.list(filters),
+          avaliacoesService.list(params),
           avaliacoesService.stats()
         ]);
-        setEvaluations(evals);
+        
+        console.log("✅ Avaliações recebidas do backend:", evals);
+        console.log("📊 Estatísticas recebidas:", stat);
+        
+        // Mapear avaliações para o formato esperado pelo frontend
+        const mappedEvals = evals.map(mapAvaliacaoToFrontend);
+        
+        setEvaluations(mappedEvals);
         setStats(stat);
       } catch (e) {
-        setError("Erro ao carregar avaliações");
+        console.error("❌ Erro ao carregar avaliações:", e);
+        console.error("Detalhes do erro:", e.response?.data || e.message);
+        setError(`Erro ao carregar avaliações: ${e.response?.data?.detail || e.message}`);
       } finally {
         setLoading(false);
       }
@@ -47,11 +129,6 @@ export default function Avaliacoes() {
   };
 
   const handleClearFilters = () => setFilters({ status: 'Todas', type: 'Todas' });
-
-  const filteredEvaluations = evaluations.filter(evaluation => 
-    (filters.status === "Todas" || evaluation.status === filters.status) &&
-    (filters.type === "Todas" || evaluation.type === filters.type)
-  );
 
   const getStatusColor = (status) => {
     switch(status) {
@@ -158,7 +235,7 @@ export default function Avaliacoes() {
             </svg>
             Suas Avaliações
           </h3>
-          <span className="results-count">{filteredEvaluations.length} {filteredEvaluations.length === 1 ? 'avaliação' : 'avaliações'}</span>
+          <span className="results-count">{evaluations.length} {evaluations.length === 1 ? 'avaliação' : 'avaliações'}</span>
         </div>
         <div className="filters-right">
           <div className="filter-group-modern">
@@ -192,7 +269,7 @@ export default function Avaliacoes() {
 
       {/* Grid de Avaliações Moderno */}
       <div className="evaluations-grid-modern">
-        {filteredEvaluations.map(evaluation => (
+        {evaluations.map(evaluation => (
           <div key={evaluation.id} className={`evaluation-card-modern ${evaluation.status.toLowerCase().replace(' ', '-')}`}>
             <div className="eval-card-header">
               <div className="eval-type-badge">
@@ -280,7 +357,7 @@ export default function Avaliacoes() {
         ))}
       </div>
 
-      {filteredEvaluations.length === 0 && (
+      {evaluations.length === 0 && !loading && (
         <div className="empty-state-modern">
           <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
             <circle cx="40" cy="40" r="40" fill="#f7fafc"/>

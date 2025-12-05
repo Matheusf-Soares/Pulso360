@@ -70,6 +70,26 @@ const usuarioService = {
   async remover(id) {
     await apiClient.delete(`/usuarios/${id}`);
   },
+
+  /**
+   * Obter competências de um usuário
+   * @param {string} usuarioId - ID do usuário
+   * @returns {Promise<Array>} Lista de competências do usuário
+   */
+  async getCompetencias(usuarioId) {
+    try {
+      const response = await apiClient.get('/usuario-competencias', {
+        params: {
+          usuario_id: usuarioId,
+          size: 100 // Busca todas as competências
+        }
+      });
+      return response.data.items || response.data;
+    } catch (error) {
+      console.error('Erro ao buscar competências do usuário:', error);
+      throw error;
+    }
+  },
 };
 
 export default usuarioService;

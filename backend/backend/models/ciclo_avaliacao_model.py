@@ -8,7 +8,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.configs import settings
-from models.base.base_entity_model import BaseEntityModel
+from backend.models.base.base_entity_model import BaseEntityModel
 
 
 class CicloAvaliacao(settings.DBBaseModel, BaseEntityModel):

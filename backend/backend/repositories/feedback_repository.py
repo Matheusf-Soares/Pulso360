@@ -5,9 +5,9 @@ from typing import List, Dict, Any, Optional
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from repositories.base.base_repository import BaseRepository
+from backend.repositories.base.base_repository import BaseRepository
 from core.dependencies import get_session
-from models.feedback_model import Feedback
+from backend.models.feedback_model import Feedback
 
 
 class FeedbackRepository(BaseRepository):

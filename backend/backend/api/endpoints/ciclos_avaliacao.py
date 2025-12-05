@@ -3,14 +3,14 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, status
 from fastapi_pagination import Page, paginate
 
-from services.ciclo_avaliacao_service import CicloAvaliacaoService
-from schemas.ciclo_avaliacao import (
+from backend.services.ciclo_avaliacao_service import CicloAvaliacaoService
+from backend.schemas.ciclo_avaliacao import (
     CicloAvaliacaoCreate,
     CicloAvaliacaoRead,
     CicloAvaliacaoUpdate,
 )
-from filters.ciclo_avaliacao_filter import CicloAvaliacaoFilter
-from schemas.error import ErrorResponse
+from backend.filters.ciclo_avaliacao_filter import CicloAvaliacaoFilter
+from backend.schemas.error import ErrorResponse
 
 router = APIRouter(prefix="/ciclos-avaliacao", tags=["ciclos-avaliacao"])
 

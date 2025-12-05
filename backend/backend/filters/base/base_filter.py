@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 from datetime import datetime
 
-from filters.base.interval_meta import IntervalMeta
+from backend.filters.base.interval_meta import IntervalMeta
 
 
 DatetimeInterval = Optional[List[Optional[datetime]]]

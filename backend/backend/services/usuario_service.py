@@ -4,9 +4,9 @@ from typing import List, Dict, Any
 
 from fastapi import Depends
 
-from services.base.base_service import BaseService
-from repositories.usuario_repository import UsuarioRepository
-from models.usuario_model import Usuario
+from backend.services.base.base_service import BaseService
+from backend.repositories.usuario_repository import UsuarioRepository
+from backend.models.usuario_model import Usuario
 from core.security import generate_hash_password
 from core.errors import not_found
 

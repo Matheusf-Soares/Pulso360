@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, status
-from schemas.error import ErrorResponse
+from backend.schemas.error import ErrorResponse
 from fastapi_pagination import Page, paginate
 
-from services.usuario_competencia_service import UsuarioCompetenciaService
-from schemas.usuario_competencia import (
+from backend.services.usuario_competencia_service import UsuarioCompetenciaService
+from backend.schemas.usuario_competencia import (
     UsuarioCompetenciaCreate,
     UsuarioCompetenciaRead,
     UsuarioCompetenciaUpdate,
 )
-from filters.usuario_competencia_filter import UsuarioCompetenciaFilter
+from backend.filters.usuario_competencia_filter import UsuarioCompetenciaFilter
 
 router = APIRouter(prefix="/usuario-competencias", tags=["usuario-competencias"])
 

@@ -1,14 +1,112 @@
 """Endpoints para gerenciamento de avaliações."""
 
-from typing import List
 from fastapi import APIRouter, Depends, status
-from fastapi_pagination import Page, Params
+from fastapi.responses import StreamingResponse
+from typing import List
+import csv
+import io
 
-from schemas.avaliacao import AvaliacaoCreate, AvaliacaoUpdate, AvaliacaoRead
-from services.avaliacao_service import AvaliacaoService
-from filters.avaliacao_filter import AvaliacaoFilter
+from backend.schemas.avaliacao import AvaliacaoCreate, AvaliacaoUpdate, AvaliacaoRead
+from backend.services.avaliacao_service import AvaliacaoService
+from backend.filters.avaliacao_filter import AvaliacaoFilter
 
 router = APIRouter(prefix="/avaliacoes", tags=["Avaliações"])
+
+
+@router.get(
+    "/stats",
+    summary="Estatísticas das avaliações",
+)
+async def stats(service: AvaliacaoService = Depends(AvaliacaoService)):
+    """Retorna estatísticas agregadas das avaliações."""
+    avaliacoes = await service.filter({})
+    total = len(avaliacoes)
+    pending = len(
+        [
+            a
+            for a in avaliacoes
+            if getattr(a, "status", None) in ["em_andamento", "rascunho", "aguardando"]
+        ]
+    )
+    completed = len(
+        [a for a in avaliacoes if getattr(a, "status", None) == "concluida"]
+    )
+    scores = [
+        float(getattr(a, "nota_global", 0))
+        for a in avaliacoes
+        if getattr(a, "nota_global", None) is not None
+    ]
+    avgScore = round(sum(scores) / len(scores), 2) if scores else 0
+    return {
+        "total": total,
+        "pending": pending,
+        "completed": completed,
+        "avgScore": avgScore,
+    }
+
+
+@router.get(
+    "/export",
+    summary="Exportar avaliações",
+)
+async def exportar_avaliacoes(
+    filtros: AvaliacaoFilter = Depends(),
+    service: AvaliacaoService = Depends(AvaliacaoService),
+):
+    """Exporta avaliações em formato CSV."""
+    avaliacoes = await service.filter(filtros.model_dump(exclude_none=True))
+
+    # Criar CSV em memória
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # Cabeçalhos
+    writer.writerow(
+        [
+            "ID",
+            "Avaliado",
+            "Avaliador",
+            "Ciclo",
+            "Tipo",
+            "Status",
+            "Nota Global",
+            "Data Criação",
+            "Data Conclusão",
+            "Progresso (%)",
+        ]
+    )
+
+    # Dados
+    for avaliacao in avaliacoes:
+        writer.writerow(
+            [
+                str(avaliacao.id),
+                avaliacao.avaliado.nome if avaliacao.avaliado else "",
+                avaliacao.avaliador.nome if avaliacao.avaliador else "",
+                avaliacao.ciclo.nome if avaliacao.ciclo else "",
+                avaliacao.tipo,
+                avaliacao.status,
+                avaliacao.nota_global or "",
+                (
+                    avaliacao.data_criacao.strftime("%d/%m/%Y %H:%M")
+                    if avaliacao.data_criacao
+                    else ""
+                ),
+                (
+                    avaliacao.data_conclusao.strftime("%d/%m/%Y %H:%M")
+                    if avaliacao.data_conclusao
+                    else ""
+                ),
+                getattr(avaliacao, "progresso", 0),
+            ]
+        )
+
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=avaliacoes.csv"},
+    )
 
 
 @router.post(
@@ -27,16 +125,15 @@ async def criar_avaliacao(
 
 @router.get(
     "",
-    response_model=Page[AvaliacaoRead],
+    response_model=List[AvaliacaoRead],
     summary="Listar avaliações",
 )
 async def listar_avaliacoes(
     filtros: AvaliacaoFilter = Depends(),
-    params: Params = Depends(),
     service: AvaliacaoService = Depends(AvaliacaoService),
 ):
-    """Lista avaliações com filtros e paginação."""
-    return await service.filter(filtros.to_dict())
+    """Lista avaliações com filtros."""
+    return await service.filter(filtros.model_dump(exclude_none=True))
 
 
 @router.get(

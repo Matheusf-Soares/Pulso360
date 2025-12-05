@@ -6,9 +6,9 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from repositories.base.base_repository import BaseRepository
+from backend.repositories.base.base_repository import BaseRepository
 from core.dependencies import get_session
-from models.usuario_papel_model import UsuarioPapel
+from backend.models.usuario_papel_model import UsuarioPapel
 
 
 class UsuarioPapelRepository(BaseRepository):

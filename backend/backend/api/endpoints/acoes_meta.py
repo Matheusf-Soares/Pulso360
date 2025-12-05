@@ -4,9 +4,9 @@ from typing import List
 from fastapi import APIRouter, Depends, status
 from fastapi_pagination import Page, Params
 
-from schemas.acao_meta import AcaoMetaCreate, AcaoMetaUpdate, AcaoMetaRead
-from services.acao_meta_service import AcaoMetaService
-from filters.acao_meta_filter import AcaoMetaFilter
+from backend.schemas.acao_meta import AcaoMetaCreate, AcaoMetaUpdate, AcaoMetaRead
+from backend.services.acao_meta_service import AcaoMetaService
+from backend.filters.acao_meta_filter import AcaoMetaFilter
 
 router = APIRouter(prefix="/acoes-meta", tags=["Ações de Meta"])
 

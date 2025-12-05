@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
-from models.tarefa_model import Tarefa
-from schemas.tarefa import TarefaCreate, TarefaUpdate, TarefaResponse
-from services.tarefa_service import TarefaService
+from backend.models.tarefa_model import Tarefa
+from backend.schemas.tarefa import TarefaCreate, TarefaUpdate, TarefaResponse
+from backend.services.tarefa_service import TarefaService
 from core.dependencies import get_session
 
 router = APIRouter(prefix="/tarefas", tags=["Tarefas"])

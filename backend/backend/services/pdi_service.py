@@ -5,11 +5,11 @@ from datetime import datetime
 
 from fastapi import Depends
 
-from services.base.base_service import BaseService
-from repositories.pdi_repository import PDIRepository
-from repositories.usuario_repository import UsuarioRepository
-from repositories.ciclo_avaliacao_repository import CicloAvaliacaoRepository
-from models.pdi_model import PDI
+from backend.services.base.base_service import BaseService
+from backend.repositories.pdi_repository import PDIRepository
+from backend.repositories.usuario_repository import UsuarioRepository
+from backend.repositories.ciclo_avaliacao_repository import CicloAvaliacaoRepository
+from backend.models.pdi_model import PDI
 from core.errors import not_found, bad_request
 
 

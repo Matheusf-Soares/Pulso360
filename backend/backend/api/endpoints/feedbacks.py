@@ -4,9 +4,9 @@ from typing import List
 from fastapi import APIRouter, Depends, status
 from fastapi_pagination import Page, Params
 
-from schemas.feedback import FeedbackCreate, FeedbackUpdate, FeedbackRead
-from services.feedback_service import FeedbackService
-from filters.feedback_filter import FeedbackFilter
+from backend.schemas.feedback import FeedbackCreate, FeedbackUpdate, FeedbackRead
+from backend.services.feedback_service import FeedbackService
+from backend.filters.feedback_filter import FeedbackFilter
 
 router = APIRouter(prefix="/feedbacks", tags=["Feedbacks"])
 

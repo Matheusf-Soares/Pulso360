@@ -23,6 +23,9 @@ class Avaliacao(settings.DBBaseModel):
     ciclo_id: Mapped[str] = mapped_column(
         UUID(as_uuid=True), ForeignKey("ciclo_avaliacao.id")
     )
+    tipo: Mapped[str] = mapped_column(
+        String(30), default="gestor"
+    )  # gestor, autoavaliacao, 360
     status: Mapped[str] = mapped_column(String(30), default="rascunho")
     nota_global: Mapped[float | None] = mapped_column(DECIMAL(5, 2))
     comentarios_gerais: Mapped[str | None] = mapped_column(Text)

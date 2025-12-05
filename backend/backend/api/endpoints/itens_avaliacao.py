@@ -4,9 +4,13 @@ from typing import List
 from fastapi import APIRouter, Depends, status
 from fastapi_pagination import Page, Params
 
-from schemas.item_avaliacao import ItemAvaliacaoCreate, ItemAvaliacaoUpdate, ItemAvaliacaoRead
-from services.item_avaliacao_service import ItemAvaliacaoService
-from filters.item_avaliacao_filter import ItemAvaliacaoFilter
+from backend.schemas.item_avaliacao import (
+    ItemAvaliacaoCreate,
+    ItemAvaliacaoUpdate,
+    ItemAvaliacaoRead,
+)
+from backend.services.item_avaliacao_service import ItemAvaliacaoService
+from backend.filters.item_avaliacao_filter import ItemAvaliacaoFilter
 
 router = APIRouter(prefix="/itens-avaliacao", tags=["Itens de Avaliação"])
 
@@ -37,6 +41,19 @@ async def listar_itens(
 ):
     """Lista itens de avaliação com filtros e paginação."""
     return await service.filter(filtros.to_dict())
+
+
+@router.get(
+    "/avaliacao/{avaliacao_id}",
+    response_model=List[ItemAvaliacaoRead],
+    summary="Listar itens por avaliação",
+)
+async def listar_itens_por_avaliacao(
+    avaliacao_id: str,
+    service: ItemAvaliacaoService = Depends(ItemAvaliacaoService),
+):
+    """Lista todos os itens de uma avaliação específica."""
+    return await service.filter({"avaliacao_id": avaliacao_id})
 
 
 @router.get(

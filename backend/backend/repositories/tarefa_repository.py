@@ -4,9 +4,9 @@ from typing import Optional, List
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from repositories.base.base_repository import BaseRepository
+from backend.repositories.base.base_repository import BaseRepository
 from core.dependencies import get_session
-from models.tarefa_model import Tarefa
+from backend.models.tarefa_model import Tarefa
 
 
 class TarefaRepository(BaseRepository):

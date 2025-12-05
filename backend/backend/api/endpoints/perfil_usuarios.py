@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, status
-from schemas.error import ErrorResponse
+from backend.schemas.error import ErrorResponse
 from fastapi_pagination import Page, paginate
 
-from services.perfil_usuario_service import PerfilUsuarioService
-from schemas.perfil_usuario import (
+from backend.services.perfil_usuario_service import PerfilUsuarioService
+from backend.schemas.perfil_usuario import (
     PerfilUsuarioCreate,
     PerfilUsuarioRead,
     PerfilUsuarioUpdate,
 )
-from filters.perfil_usuario_filter import PerfilUsuarioFilter
+from backend.filters.perfil_usuario_filter import PerfilUsuarioFilter
 
 router = APIRouter(prefix="/perfil-usuarios", tags=["perfil-usuarios"])
 

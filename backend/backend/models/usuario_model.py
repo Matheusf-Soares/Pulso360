@@ -11,19 +11,19 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 # removed duplicate TYPE_CHECKING import
 
 if TYPE_CHECKING:
-    from models.perfil_usuario_model import PerfilUsuario
-    from models.usuario_papel_model import UsuarioPapel
-    from models.usuario_competencia_model import UsuarioCompetencia
-    from models.pdi_model import PDI
-    from models.meta_model import Meta
-    from models.acao_meta_model import AcaoMeta
+    from backend.models.perfil_usuario_model import PerfilUsuario
+    from backend.models.usuario_papel_model import UsuarioPapel
+    from backend.models.usuario_competencia_model import UsuarioCompetencia
+    from backend.models.pdi_model import PDI
+    from backend.models.meta_model import Meta
+    from backend.models.acao_meta_model import AcaoMeta
 
 # Importações diretas para evitar ambiguidade de FKs nas relações (Avaliacao e Feedback possuem duas FKs para Usuario)
-from models.avaliacao_model import Avaliacao  # noqa: E402
-from models.feedback_model import Feedback  # noqa: E402
+from backend.models.avaliacao_model import Avaliacao  # noqa: E402
+from backend.models.feedback_model import Feedback  # noqa: E402
 
 from core.configs import settings
-from models.base.base_entity_model import BaseEntityModel
+from backend.models.base.base_entity_model import BaseEntityModel
 
 
 class Usuario(settings.DBBaseModel, BaseEntityModel):

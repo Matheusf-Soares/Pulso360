@@ -4,9 +4,9 @@ from typing import Dict, Any, List
 
 from fastapi import Depends
 
-from services.base.base_service import BaseService
-from repositories.papel_repository import PapelRepository
-from models.papel_model import Papel
+from backend.services.base.base_service import BaseService
+from backend.repositories.papel_repository import PapelRepository
+from backend.models.papel_model import Papel
 from core.errors import not_found
 
 

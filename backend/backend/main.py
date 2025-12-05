@@ -14,7 +14,7 @@ CURRENT_DIR = os.path.dirname(__file__)
 if CURRENT_DIR not in sys.path:
     sys.path.append(CURRENT_DIR)
 
-from api.api import api_router  # noqa: E402
+from backend.api.api import api_router  # noqa: E402
 from core.configs import settings  # noqa: E402
 import models.__all__models  # noqa: F401,E402  # garante registro de todos os modelos no metadata
 

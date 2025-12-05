@@ -5,9 +5,9 @@ from typing import Optional, List, Dict, Any
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from repositories.base.base_repository import BaseRepository
+from backend.repositories.base.base_repository import BaseRepository
 from core.dependencies import get_session
-from models.perfil_usuario_model import PerfilUsuario
+from backend.models.perfil_usuario_model import PerfilUsuario
 
 
 class PerfilUsuarioRepository(BaseRepository):
